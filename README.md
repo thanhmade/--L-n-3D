@@ -17,7 +17,7 @@
 
 ## ✨ Giới thiệu
 
-Hóa thân thành **Bé Nấm Mộng Mơ**, dạo qua những khu rừng thần tiên, chiến đấu với quái, thu thập xu tinh linh, tích lũy EXP và mở khóa bản đồ theo cấp độ. Đây là **bản chơi thử v0.3.0**, không phải game thương mại hoàn chỉnh.
+Hóa thân thành **Bé Nấm Mộng Mơ**, dạo qua những khu rừng thần tiên, chiến đấu với quái, thu thập xu tinh linh, tích lũy EXP và mở khóa bản đồ theo cấp độ. Đây là **bản chơi thử v0.2.0**, không phải game thương mại hoàn chỉnh.
 
 | Hệ thống | Đã có trong v0.3.0 |
 | --- | --- |
@@ -28,23 +28,8 @@ Hóa thân thành **Bé Nấm Mộng Mơ**, dạo qua những khu rừng thần 
 | Độ khó | **Dễ**, **Thử thách** (mặc định), **Ác mộng**; quái mạnh dần theo cấp |
 | Thiết bị | PC với bàn phím/chuột, điện thoại với joystick/nút cảm ứng |
 | Trình bày mobile | HUD thu gọn, nhiệm vụ thu gọn, thử fullscreen/landscape và bố cục dự phòng |
-
-
-## 🎧 Nhạc nền, hiệu ứng, giọng nói v0.3.0
-
-Game hiện có **nhạc CC0** riêng cho **Làng Nấm Ánh Sao** (nhạc cổ tích nhẹ), **Rừng Đom Đóm** (âm hưởng rừng), **Đầm Pha Lê** (huyền bí), nhạc **chiến đấu** khi có quái áp sát, tiếng **chim rừng** và các hiệu ứng chém, phép, trúng đòn, rơi xu, vật phẩm, lên cấp. Âm lượng nhạc / ambient / hiệu ứng / giọng có thể chỉnh độc lập trong **Hướng dẫn → Nhạc & giọng nói**.
-
-Có **7 NPC chuyên ngành**: Già làng (nhiệm vụ), Thầy thuốc (hồi HP/MP), Thương nhân (bình hồi máu), Kiểm lâm (bảo hộ), Tiên nữ (hồi MP), Học giả (chiến thuật) và Thợ rèn (cường hóa). **Nhấn trực tiếp vào NPC** (hoặc đến gần rồi nhấn `E`), chọn lượt hội thoại, nghe lại, hoặc dùng dịch vụ. Phụ đề tiếng Việt luôn hiển thị. Lời nói sử dụng giọng **vi-VN của điện thoại/máy tính** qua Web Speech API; nếu thiết bị chưa cài giọng Việt, game không đọc sai bằng tiếng Anh mà hiện hướng dẫn cài giọng.
-
-**Giấy phép/ghi nguồn:** [docs/AUDIO-CREDITS.md](docs/AUDIO-CREDITS.md) (Kenney, rubberduck, cynicmusic, TinyWorlds, MintoDog, isaiah658, Alex McCulloch). Audio được tải từ nguồn gốc CC0 **khi build** và phục vụ từ cùng domain, không hotlink khi chơi.
-
-```bash
-python3 scripts/download_audio.py   # tải nhạc + 2 pack hiệu ứng CC0
-npm run build                     # tạo dist/ đầy đủ, gồm assets/audio
-npm test && npm run lint          # kiểm tra mã + NPC + âm thanh
-```
-
-**Triển khai Vercel v0.3:** Build Command `python3 scripts/build_site.py`, Output Directory `dist`, framework Other. Build cần truy cập OpenGameArt để tải tài nguyên CC0.
+| Nhạc nền | 3 vùng + bản nhạc giao chiến, chuyển cảnh mượt, ambience rừng, tự giảm nhạc khi NPC nói |
+| NPC | 7 nhân vật có nghề nghiệp và tương tác dịch vụ riêng, phụ đề + Web Speech `vi-VN` |
 
 ## 🗺️ Thế giới
 
@@ -66,7 +51,7 @@ npm test && npm run lint          # kiểm tra mã + NPC + âm thanh
 | Bắn phép | `L` | **PHÉP** |
 | Lướt né | `K` | **LƯỚT** |
 | Dùng bình máu | `H` | **HỒI MÁU** |
-| Tương tác cổng | `E` | Nút tương tác khi tới gần |
+| Tương tác cổng/NPC | `E` hoặc nhấp vào NPC | Chạm mô hình NPC, hoặc nút tương tác khi tới gần |
 | Mở bản đồ | `M` | Biểu tượng bản đồ |
 
 **Điện thoại:** xoay ngang để có vùng nhìn tốt nhất. Khi nhấn **Bắt đầu**, game *yêu cầu* fullscreen và khóa landscape nếu trình duyệt cho phép. Website **không thể ép hệ điều hành tự xoay** trên mọi Android/iOS hoặc webview; chế độ ngang mô phỏng chỉ là phương án dự phòng. Trên Android, có thể mở bằng Chrome và bật xoay màn hình ở cài đặt máy.
@@ -86,24 +71,26 @@ Mở **http://127.0.0.1:5173/**. Nếu không muốn cài Node.js, có thể ch�
 ```bash
 npm test         # kiểm tra tài nguyên và cấu hình bằng Node built-in test
 npm run lint     # kiểm tra cú pháp JS
+npm run fetch:audio  # tải CC0 vào assets/audio/ để chạy local
+npm run build        # tạo thư mục public/ đầy đủ code + tệp âm thanh
 ```
 
-> Chạy với HTTP server thay vì mở `file://` để tránh giới hạn module ES và tài nguyên trình duyệt. Lệnh chạy không đòi npm install vì game không khai báo dependency cài cục bộ.
+> Chạy với HTTP server thay vì mở `file://` để tránh giới hạn module ES và tài nguyên trình duyệt. Không có thư viện npm bên ngoài. Nhạc/SFX được tải từ các nguồn CC0 đã dẫn trong tài liệu, nên cần Internet lần đầu.
 
 ## 🎼 Nhạc nền, hiệu ứng và NPC có tiếng Việt (v0.3.0)
 
 Game có **4 bản nhạc nền theo ngữ cảnh**: Làng Nấm Ánh Sao (vui tươi), Rừng Đom Đóm (huyền bí), Đầm Pha Lê (lung linh), chiến đấu (dồn dập), kèm tiếng nền rừng và hiệu ứng đòn đánh, phép, nhặt xu, lên cấp, hồi máu. Âm nhạc tự chuyển mượt giữa các vùng và giảm nhỏ khi nhân vật đang đọc lời.
 
-Có **6 NPC tương tác**, dùng **tiếng Việt có phụ đề**: Già làng, Thầy thuốc, Thương nhân, Võ sư, Tiên nữ, Người giữ Pha Lê. Người chơi chạm trực tiếp lên mô hình hoặc bấm `E` khi đến gần, nghe giới thiệu/hướng dẫn, chọn các dịch vụ tùy vai trò. Giọng nói chạy bằng **Web Speech `vi-VN` trên thiết bị**; cần cài giọng tiếng Việt để có phát âm phù hợp, không bảo đảm giống nhau trên mọi trình duyệt. Nhấn `🎵` để chỉnh riêng âm lượng nhạc, hiệu ứng, giọng nói.
+Có **7 NPC tương tác**, dùng **tiếng Việt có phụ đề**: Già làng, Thầy thuốc, Thương nhân, Kiểm lâm, Tiên nữ, Học giả Pha Lê và Thợ rèn. Người chơi chạm trực tiếp lên mô hình hoặc bấm `E` khi đến gần, nghe giới thiệu/hướng dẫn, chọn các dịch vụ tùy vai trò. Giọng nói chạy bằng **Web Speech `vi-VN` trên thiết bị**; cần cài giọng tiếng Việt để có phát âm phù hợp, không bảo đảm giống nhau trên mọi trình duyệt. Nhấn `🎵` để chỉnh riêng âm lượng nhạc, hiệu ứng, giọng nói.
 
 Tất cả **bản thu nền/SFX trong v0.3 đều là nguồn OpenGameArt CC0**, đọc đầy đủ [nguồn, tác giả, giấy phép và danh mục tệp](docs/AM-THANH-NGUON-VA-GIAY-PHEP.md). Chi tiết NPC và giá dịch vụ: [NPC-VA-LOI-THOAI.md](docs/NPC-VA-LOI-THOAI.md).
 
 ## 🌐 Triển khai Vercel
 
-Dự án là **static website**, không cần máy chủ ứng dụng hoặc tài khoản người chơi.
+Dự án là **static website**, không cần máy chủ ứng dụng hoặc tài khoản người chơi. Bản v0.3 chạy script `npm run build` để đóng gói 15 nguồn âm thanh CC0; nếu nguồn âm thanh lỗi mạng, build sẽ dừng để không phát hành bản thiếu tiếng.
 
 1. Vào Vercel → **Add New Project** → import `thanhmade/--L-n-3D` (cấp quyền GitHub nếu cần).
-2. Framework Preset: **Other**; Root Directory: `./`; Build Command: `python3 scripts/build_site.py`; Output Directory: `dist`.
+2. Framework Preset: **Other**; Root Directory: `./`; Build Command: **`npm run build`**; Output Directory: **`public`**. Bản build sẽ tải âm thanh CC0 vào `public/assets/audio` và tự phục vụ cùng miền web.
 3. Deploy và xác nhận mở được `/`, `/game.js`, `/style.css`, `/manifest.webmanifest`.
 4. Muốn đẩy thay đổi lên một dự án Vercel đã tồn tại, **kết nối đúng repository này với project đó trước**. Không tự suy đoán site cũ đã liên kết Git.
 
@@ -117,13 +104,14 @@ Website đang tham chiếu: **https://nam-lun-khu-rung-tinh-linh-3d.vercel.app**
 ├── style.css                  # Giao diện PC/mobile, landscape fallback
 ├── game.js                    # Scene/Camera, gameplay, AI, chiến đấu, save, NPC
 ├── audio.js                   # GameAudio, playlist, SFX, Web Speech tiếng Việt
-├── npc-dialogues.js           # 6 NPC, thoại nghề nghiệp và nhiệm vụ
-├── assets/audio/              # Nhạc và hiệu ứng CC0 gói cùng website
+├── npcs.js                    # 7 NPC, thoại nghề nghiệp và nhiệm vụ
+├── assets/audio/              # Nhạc & SFX được tải khi build (không commit)
 ├── icon.svg                   # Biểu tượng ứng dụng
 ├── manifest.webmanifest       # Thiết lập nhận diện ứng dụng web
 ├── assets/nam-lun-banner.svg  # Hình tiêu đề README (minh họa SVG)
 ├── docs/                      # Kiến trúc, triển khai, QA, lịch sử yêu cầu
 ├── scripts/serve.mjs          # Máy chủ tĩnh cho phát triển cục bộ
+├── scripts/fetch-audio.mjs    # Tải tệp CC0, giải nén ZIP và build public/
 ├── tests/                     # Kiểm tra tĩnh với node --test
 ├── skills/nam-lun-3d-dev/     # Skill hướng dẫn cộng tác AI
 ├── plugin/nam-lun-3d-studio/  # Mã nguồn plugin ChatGPT skills-only
@@ -156,7 +144,7 @@ Ví dụ lệnh cho trợ lý AI: `Dùng skill nam-lun-3d-dev kiểm tra HUD đi
 
 ## 📝 Nhật ký phiên bản
 
-Chi tiết tại [CHANGELOG.md](CHANGELOG.md). Phiên bản **v0.3.0**: nhạc + SFX CC0 từ nguồn đã kiểm chứng, hội thoại 6 NPC tiếng Việt, giao thương và huấn luyện. v0.3.0 vẫn giữ HUD mobile và AI quái cải tiến.
+Chi tiết tại [CHANGELOG.md](CHANGELOG.md). Phiên bản **v0.3.0**: nhạc + SFX CC0 từ nguồn đã kiểm chứng, hội thoại 6 NPC tiếng Việt, giao thương và huấn luyện. v0.2.0 vẫn giữ HUD mobile và AI quái cải tiến.
 
 ## 👤 Tác giả & bản quyền
 
