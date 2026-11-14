@@ -44,7 +44,6 @@ let saved=readSave();
 const state={...saved,started:false,paused:true,sound:true,world:null,hero:null,heroVisual:null,levelPopup:false,gameOver:false,lastMove:new THREE.Vector3(0,0,-1),attackAt:0,magicAt:0,dashAt:0,dashRemain:0,dashDir:new THREE.Vector3(0,0,-1),hurtAt:0,gameTime:0,camYaw:0.17,camPitch:0.62,camDistance:13.8,heroWalking:false,rangerBuffUntil:0,attackBoostUntil:0,fairyBlessAt:-60,activeNpc:null,npcLine:0};
 let renderer,scene,camera,sun,hemi,ambience,worlds=[null,null,null],elapsed=0,previous=performance.now(),hudClock=0,minimapClock=0,regenClock=0,autosaveClock=0;
 const effects=[],projectiles=[],pickups=[],keys=new Set();
-let lastCombatAudioAt=-999;
 const gameAudio=new GameAudio(msg=>{const target=$('voice-hint'); if(!target)return;target.textContent=msg;target.hidden=false;clearTimeout(gameAudio.statusTimer);gameAudio.statusTimer=setTimeout(()=>{target.hidden=true;},5000);});
 const npcRaycaster=new THREE.Raycaster();const npcMouse=new THREE.Vector2();
 const tempVec=new THREE.Vector3(),tempVec2=new THREE.Vector3(),screenVec=new THREE.Vector3(),cameraLook=new THREE.Vector3();
@@ -398,7 +397,7 @@ function enemyLabel(e){return (e.isElite?'Tinh anh · ':'')+(e.type==='slime'?'N
 
 // ----- Combat, magic, treasures and level progression -----
 function saveGame(){try{const fields=['level','xp','hp','mp','coins','kills','potions','zone','hat','quests','completed','difficulty'];const obj={};fields.forEach(f=>obj[f]=state[f]);localStorage.setItem(SAVE_KEY,JSON.stringify(obj));}catch{}}
-function sound(type){if(['attack','hit','hurt','spell','elite','monster'].includes(type))lastCombatAudioAt=elapsed;gameAudio.sfx(type, type==='hit'?.9:type==='loot'?.55:1);}
+function sound(type){gameAudio.sfx(type, type==='hit'?.9:type==='loot'?.55:1);}
 function notify(text,style=''){const el=document.createElement('div');el.className='toast '+style;el.textContent=text;$('toast-stack').prepend(el);setTimeout(()=>el.remove(),2650);const stack=$('toast-stack');while(stack.children.length>3)stack.lastElementChild.remove();}
 function floatText(text,position,type=''){if(!camera)return;const p=position.clone().project(camera);if(p.z<-1||p.z>1)return;const vp=gameSize(),x=(p.x*.5+.5)*vp.width,y=(-p.y*.5+.5)*vp.height;const el=document.createElement('div');el.className='float-damage '+type;el.textContent=text;el.style.left=x+'px';el.style.top=y+'px';$('floating-layer').append(el);setTimeout(()=>el.remove(),780);}
 function burst(position,color,count=16,speed=2.5,life=.75){
@@ -437,7 +436,7 @@ function attackAction(){
   state.attackAt=elapsed+.55;state.attackAnim=.34;
   const enemy=closestEnemy(4.35,TAU);
   if(enemy){const toward=enemy.group.position.clone().sub(state.hero.position);state.hero.rotation.y=Math.atan2(toward.x,toward.z);state.lastMove.copy(toward).setY(0).normalize();}
-  slashEffect();sound('attack');
+  slashEffect();sound('attack');gameAudio.setCombat(true);
   let targets=state.world.enemies.filter(e=>e.alive&&e.group.position.distanceTo(state.hero.position)<3.95);
   const facing=new THREE.Vector3(Math.sin(state.hero.rotation.y),0,Math.cos(state.hero.rotation.y));
   targets=targets.filter(e=>facing.dot(e.group.position.clone().sub(state.hero.position).normalize())>-.12).sort((a,b)=>a.group.position.distanceTo(state.hero.position)-b.group.position.distanceTo(state.hero.position)).slice(0,3);
@@ -453,7 +452,7 @@ function magicAction(){
   const orb=sphere(scene,orbMat,state.hero.position.x+forward.x*.9,1.64,state.hero.position.z+forward.z*.9,.32,.32,.32);
   sphere(orb,basic('#8fffff',.20),0,0,0,1.52,1.52,1.52);
   projectiles.push({obj:orb,target,velocity:forward.clone().multiplyScalar(12.5),ttl:1.45,damage:Math.round(playerAttack()*1.6+11),position:orb.position.clone()});
-  burst(orb.position.clone(),'#9ff8ff',20,2.2,.56);sound('spell');refreshHUD();
+  burst(orb.position.clone(),'#9ff8ff',20,2.2,.56);gameAudio.setCombat(true);sound('spell');refreshHUD();
 }
 function dashAction(){
   if(!state.started||state.paused||state.gameOver||elapsed<state.dashAt)return;
@@ -782,13 +781,14 @@ function loop(now){
   const dt=Math.min(.05,Math.max(.001,(now-previous)/1000));previous=now;elapsed+=dt;
   if(state.started&&!state.paused){
     updateHero(dt);updateEnemies(dt,elapsed);updateProjectiles(dt);updatePickups(dt,elapsed);
-    const nearbyThreat=state.world.enemies.some(e=>e.alive && e.group.position.distanceTo(state.hero.position)<6.2);
-    gameAudio.setCombat(nearbyThreat || elapsed-lastCombatAudioAt<4.2);
     hudClock+=dt;minimapClock+=dt;autosaveClock+=dt;
     if(hudClock>.11){refreshHUD();updateInteractionUI();hudClock=0;}
     if(autosaveClock>8){saveGame();autosaveClock=0;}
   }
-  if(state.paused&&gameAudio.combat)gameAudio.setCombat(false);
+  if(state.started&&!state.paused&&Math.floor(elapsed*2)!==Math.floor((elapsed-dt)*2)){
+    const closeThreat=state.world.enemies.some(e=>e.alive&&e.group.position.distanceTo(state.hero.position)<8.2);
+    gameAudio.setCombat(closeThreat);
+  }
   animateHero(elapsed);animateEnvironment(dt,elapsed);updateCamera(dt);updateEffects(dt);
   if(minimapClock>.11||!state.started){drawMinimap();minimapClock=0;}
   renderer.render(scene,camera);
@@ -880,7 +880,7 @@ function clickNPC(e){
 }
 function openNpcDialogue(npc){
   if(!state.started||state.gameOver)return;
-  state.activeNpc=npc;state.npcLine=0;state.paused=true;
+  gameAudio.setCombat(false);state.activeNpc=npc;state.npcLine=0;state.paused=true;
   $('npc-portrait').textContent=npc.face;$('npc-name').textContent=npc.name;$('npc-job').textContent=npc.job;
   $('npc-screen').classList.remove('hidden');
   sound('open');renderNpcLine();

@@ -8,8 +8,8 @@
     "dev": "node scripts/serve.mjs",
     "test": "node --test tests/*.test.mjs",
     "lint": "node --check audio.js && node --check npcs.js && node --check game.js && node --check scripts/serve.mjs",
-    "build": "node scripts/fetch-audio.mjs",
-    "fetch:audio": "node scripts/fetch-audio.mjs --local"
+    "build": "python3 scripts/build_site.py",
+    "audio:fetch": "python3 scripts/download_audio.py"
   },
   "engines": {
     "node": ">=20"
