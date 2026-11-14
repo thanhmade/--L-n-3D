@@ -1,22 +1,22 @@
 /**
  * NẤM LÙN 3D v0.3.0 — independent audio mixer.
- * CC0 assets are self-hosted under assets/audio/ (see AUDIO-CREDITS.md).
+ * CC0 assets are bundled by scripts/fetch-audio.mjs; see docs/AUDIO-CREDITS.md.
  * Spoken dialogue uses the device's installed Vietnamese Web Speech voice,
  * not third-party cloud TTS. If no vi voice is present, we show subtitles only.
  */
 export const AUDIO_TRACKS = Object.freeze({
-  music: ['assets/audio/music/village.mp3','assets/audio/music/forest.mp3','assets/audio/music/crystal.mp3'],
+  music: ['assets/audio/music/village.mp3','assets/audio/music/forest.ogg','assets/audio/music/crystal.mp3'],
   battle: 'assets/audio/music/battle.ogg',
-  ambience: 'assets/audio/ambience/birds.ogg',
+  ambience: 'assets/audio/music/ambience.mp3',
   sfx: {
-    hit:'assets/audio/sfx/blade_01.ogg', attack:'assets/audio/sfx/blade_01.ogg',
-    spell:'assets/audio/sfx/spell_01.ogg', dash:'assets/audio/sfx/spell_02.ogg',
-    hurt:'assets/audio/sfx/creature_hurt_01.ogg', defeat:'assets/audio/sfx/creature_die_01.ogg',
-    monster:'assets/audio/sfx/creature_slime_01.ogg', elite:'assets/audio/sfx/creature_roar_01.ogg',
-    loot:'assets/audio/sfx/item_coins_01.ogg', coin:'assets/audio/sfx/item_coins_02.ogg',
-    potion:'assets/audio/sfx/item_misc_01.ogg', level:'assets/audio/sfx/item_gem_01.ogg',
-    warp:'assets/audio/sfx/spell_02.ogg', open:'assets/audio/sfx/wood_01.ogg',
-    ui:'assets/audio/sfx/misc_01.ogg', improve:'assets/audio/sfx/metal_01.ogg'
+    hit:'assets/audio/sfx/hit.ogg', attack:'assets/audio/sfx/hit.ogg',
+    spell:'assets/audio/sfx/spell.ogg', dash:'assets/audio/sfx/warp.ogg',
+    hurt:'assets/audio/sfx/hurt.ogg', defeat:'assets/audio/sfx/defeat.ogg',
+    monster:'assets/audio/sfx/hurt.ogg', elite:'assets/audio/sfx/defeat.ogg',
+    loot:'assets/audio/sfx/pickup.mp3', coin:'assets/audio/sfx/coin.ogg',
+    potion:'assets/audio/sfx/pickup.mp3', level:'assets/audio/sfx/level.mp3',
+    warp:'assets/audio/sfx/warp.ogg', open:'assets/audio/sfx/ui.mp3',
+    ui:'assets/audio/sfx/ui.mp3', improve:'assets/audio/sfx/level.mp3'
   }
 });
 export const AUDIO_PREF_KEY = 'nam-lun-audio-prefs-v03';
