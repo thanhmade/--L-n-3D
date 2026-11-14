@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#102523" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="screen-orientation" content="landscape" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="description" content="Nấm Lùn & Khu Rừng Tinh Linh — game hành động nhập vai chibi 3D, đánh quái và lên cấp." />
+  <title>NẤM LÙN ✦ KHU RỪNG TINH LINH — Game 3D v0.2</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/svg+xml" href="icon.svg" />
+</head>
+<body>
+<div id="app">
+  <canvas id="game-canvas" aria-label="Thế giới nấm lùn 3D"></canvas>
+  <div class="vignette" aria-hidden="true"></div>
+  <div class="screen-shine" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">🍄</span><div><strong>NẤM LÙN</strong><small>KHU RỪNG TINH LINH</small></div></div>
+    <div class="location-chip"><span class="location-pulse"></span><div><strong id="location-name">Làng Nấm Ánh Sao</strong><span id="location-desc">Bản đồ 1 / 3 · Khu tân thủ</span></div></div>
+    <div class="top-actions"><button class="icon-btn" id="btn-landscape" title="Toàn màn hình / xoay ngang" aria-label="Toàn màn hình và xoay ngang">⛶</button><button class="icon-btn" id="btn-map" title="Bản đồ (M)">🗺️</button><button class="icon-btn" id="btn-sound" title="Bật / tắt âm thanh">🔊</button><button class="icon-btn" id="btn-help" title="Hướng dẫn">❔</button></div>
+  </header>
+
+  <section class="player-hud" aria-label="Thông tin nhân vật">
+    <div class="player-line"><div class="avatar">🍄<span class="avatar-star">✦</span></div><div class="player-meta"><strong id="player-name">Bé Nấm Mộng Mơ</strong><span><b class="level-chip">LV <span id="lv-text">1</span></b> <span class="class-name">Pháp sư Rừng Nấm</span></span></div></div>
+    <div class="stat-row"><span>❤️ HP</span><div class="stat-track hp-track"><i id="hp-fill"></i></div><b id="hp-text">100 / 100</b></div>
+    <div class="stat-row"><span>✦ MP</span><div class="stat-track mp-track"><i id="mp-fill"></i></div><b id="mp-text">80 / 80</b></div>
+    <div class="stat-row exp-row"><span>✧ EXP</span><div class="stat-track exp-track"><i id="exp-fill"></i></div><b id="exp-text">0 / 120</b></div>
+    <div class="wallet"><span>🪙 <b id="coin-text">0</b> Xu tinh linh</span><span>⚔️ <b id="kills-text">0</b> quái</span></div>
+  </section>
+
+  <section class="quest-panel" id="quest-panel" aria-label="Nhiệm vụ">
+    <div class="quest-title"><span class="tiny-star">✧</span><span>NHIỆM VỤ</span><span id="quest-compact">0/5</span> <span id="quest-badge">CHÍNH</span><button type="button" id="btn-quest-toggle" aria-label="Xem / ẩn nhiệm vụ" aria-expanded="false">⌄</button></div>
+    <div class="quest-body">
+      <strong id="quest-name">Bảo vệ làng nấm</strong>
+      <p id="quest-description">Đánh bại quái quanh làng để giúp cư dân.</p>
+      <div class="quest-progress"><div><span>TIẾN ĐỘ</span><b id="quest-count">0/5</b></div><div class="quest-track"><i id="quest-fill"></i></div></div>
+    </div>
+  </section>
+
+  <section class="minimap-card" id="mini-card" aria-label="Bản đồ nhỏ">
+    <div class="mini-title"><span>✥ BẢN ĐỒ</span><span id="mini-zone">01</span></div>
+    <canvas id="minimap" width="176" height="130"></canvas>
+    <div class="mini-legend"><i class="mini-dot gold"></i> Cổng <i class="mini-dot pink"></i> Quái <i class="mini-dot aqua"></i> Bạn</div>
+  </section>
+
+  <div class="world-prompt hidden" id="world-prompt"><span id="prompt-icon">🌀</span><div><strong id="prompt-title">Cổng dịch chuyển</strong><small id="prompt-sub">Nhấn E để đi tiếp</small></div><button id="btn-interact">TƯƠNG TÁC <kbd>E</kbd></button></div>
+  <div id="toast-stack" aria-live="polite"></div>
+  <div id="floating-layer" aria-hidden="true"></div>
+  <div class="combat-hint" id="combat-hint">Di chuyển đến gần quái và nhấn <kbd>J</kbd> để tấn công</div>
+
+  <div class="bottom-left"><div id="joystick" class="joystick"><div id="joy-knob" class="joy-knob"></div><span class="joy-label">DI CHUYỂN</span></div><div class="keyboard-tip">W A S D <span>Di chuyển</span><br/>Kéo chuột <span>Đổi góc nhìn</span></div></div>
+  <div class="actionbar">
+    <button class="skill-btn attack" id="btn-attack"><span class="skill-icon">⚔️</span><strong>CHÉM</strong><small>J</small><i class="cooldown-layer" id="cd-attack"></i></button>
+    <button class="skill-btn magic" id="btn-magic"><span class="skill-icon">✨</span><strong>PHÉP</strong><small>L</small><i class="cooldown-layer" id="cd-magic"></i></button>
+    <button class="skill-btn dash" id="btn-dash"><span class="skill-icon">💨</span><strong>LƯỚT</strong><small>K</small><i class="cooldown-layer" id="cd-dash"></i></button>
+    <button class="skill-btn potion" id="btn-potion"><span class="skill-icon">🧪</span><strong>HỒI MÁU</strong><small>H · <span id="potion-count">3</span></small></button>
+  </div>
+  <div class="footer-caption">✦ Đánh quái · Nhặt vật phẩm · Lên cấp · Mở khóa bản đồ ✦</div>
+
+  <div class="overlay intro-overlay" id="start-screen">
+    <div class="intro-card">
+      <div class="intro-kicker">✦ MỘT CUỘC PHIÊU LƯU KỲ DIỆU ✦</div>
+      <div class="intro-emblem">🍄<span>✦</span></div>
+      <h1>NẤM LÙN<br/><em>& KHU RỪNG TINH LINH</em></h1>
+      <p>Hóa thân thành bé nấm chibi dễ thương, khám phá rừng cổ tích, đánh bại sinh vật kỳ lạ và trở thành <b>Vệ Binh Rừng Nấm</b>!</p>
+      <div class="intro-features"><span>🌳 3 bản đồ</span><span>⚔️ Đánh quái</span><span>⬆️ Lên cấp</span><span>✨ Phép thuật</span></div>
+      <div class="choice-label">ĐỘ KHÓ KHI ĐÁNH QUÁI</div>
+      <div class="difficulty-choices" aria-label="Lựa chọn độ khó">
+        <button class="difficulty-choice" data-difficulty="story">🌱 DỄ</button>
+        <button class="difficulty-choice selected" data-difficulty="challenge">⚔️ THỬ THÁCH</button>
+        <button class="difficulty-choice" data-difficulty="nightmare">🔥 ÁC MỘNG</button>
+      </div>
+      <div class="choice-label">CHỌN MÀU MŨ CHO BÉ NẤM</div>
+      <div class="hat-choices" id="hat-choices"><button class="hat-choice selected" data-hat="red"><span>🍄</span>Đỏ san hô</button><button class="hat-choice" data-hat="violet"><span>🍄</span>Tím mộng mơ</button><button class="hat-choice" data-hat="mint"><span>🍄</span>Xanh ngọc</button></div>
+      <div class="intro-buttons"><button class="start-btn" id="btn-start">BẮT ĐẦU PHIÊU LƯU <span>➜</span></button><button class="secondary-btn" id="btn-reset">↻ Chơi lại từ đầu</button></div>
+      <small class="intro-note">📱 Điện thoại: tự yêu cầu xoay ngang & toàn màn hình khi bắt đầu. Trình duyệt không hỗ trợ sẽ dùng chế độ ngang mô phỏng. PC: WASD + J/L/K/H · Tiến trình lưu trên máy.</small>
+    </div>
+  </div>
+
+  <div class="overlay popup-overlay hidden" id="level-screen"><div class="popup-card level-card"><div class="level-glow">🌟</div><div class="intro-kicker">✦ SỨC MẠNH ĐƯỢC ĐÁNH THỨC ✦</div><h2>LÊN CẤP!</h2><div class="giant-level">LV <span id="new-level">2</span></div><p id="level-reward">Sinh lực, phép thuật và sức tấn công đã tăng!</p><button class="start-btn" id="btn-level-ok">TIẾP TỤC CHINH PHỤC ➜</button></div></div>
+  <div class="overlay popup-overlay hidden" id="death-screen"><div class="popup-card"><div class="level-glow">💫</div><h2>BÉ NẤM MỆT RỒI!</h2><p>Đừng lo, phép màu của rừng sẽ đưa bạn về làng. Toàn bộ cấp độ và vật phẩm vẫn được giữ lại.</p><button class="start-btn" id="btn-respawn">🌱 HỒI SINH</button></div></div>
+  <div class="overlay popup-overlay hidden" id="help-screen"><div class="popup-card help-card"><div class="intro-kicker">SỔ TAY NHÀ THÁM HIỂM</div><h2>HƯỚNG DẪN</h2><div class="help-grid"><div><b>🎮 Di chuyển</b><p>WASD hoặc joystick. Kéo chuột / vuốt trên cảnh để xoay góc nhìn.</p></div><div><b>⚔️ Chiến đấu</b><p>J: chém gần · L: bắn phép (tiêu MP) · K: lướt né đòn.</p></div><div><b>🌟 Phát triển</b><p>Đánh quái nhận EXP, xu, đôi lúc nhặt được bình máu. H: uống bình máu.</p></div><div><b>🌀 Khám phá</b><p>Đến gần cổng phát sáng và nhấn E để qua khu mới khi đủ cấp.</p></div></div><div class="difficulty-settings"><div class="choice-label">ĐIỀU CHỈNH ĐỘ KHÓ QUÁI</div><div class="difficulty-choices"><button class="difficulty-choice" data-difficulty="story">🌱 DỄ</button><button class="difficulty-choice" data-difficulty="challenge">⚔️ THỬ THÁCH</button><button class="difficulty-choice" data-difficulty="nightmare">🔥 ÁC MỘNG</button></div></div><button class="start-btn" id="btn-help-close">ĐÃ HIỂU!</button></div></div>
+  <div class="overlay popup-overlay hidden" id="worldmap-screen"><div class="popup-card worldmap-card"><div class="intro-kicker">BẢN ĐỒ THẾ GIỚI</div><h2>VƯƠNG QUỐC NẤM</h2><div class="zone-list" id="zone-list"></div><p class="small-helper">Khám phá qua cổng dịch chuyển ở cuối mỗi bản đồ. Có thể quay lại các vùng đã mở.</p><button class="start-btn" id="btn-worldmap-close">TRỞ LẠI CUỘC PHIÊU LƯU</button></div></div>
+  <div class="error-banner hidden" id="error-banner">Không thể tải môi trường 3D. Hãy kiểm tra kết nối Internet, làm mới trang và bảo đảm trình duyệt hỗ trợ WebGL.</div>
+</div>
+<script type="module" src="game.js"></script>
+</body>
+</html>

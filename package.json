@@ -1,0 +1,13 @@
+{
+  "name": "nam-lun-khu-rung-tinh-linh-3d",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "description": "Game Nấm Lùn 3D chibi action-RPG bằng Three.js trên trình duyệt",
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "lint": "node --check game.js && node --check scripts/serve.mjs"
+  },
+  "engines": { "node": ">=20" }
+}

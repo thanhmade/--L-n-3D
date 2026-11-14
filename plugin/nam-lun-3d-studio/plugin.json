@@ -1,0 +1,39 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "nam-lun-3d-studio",
+  "version": "1.0.0",
+  "description": "Trợ lý phát triển game Nấm Lùn 3D: HUD điện thoại, xoay ngang, AI quái, cân bằng độ khó, bản đồ, nhiệm vụ và xuất bản Three.js.",
+  "author": {
+    "name": "Nguyễn Trung Thành"
+  },
+  "keywords": [
+    "Nấm Lùn 3D",
+    "Three.js",
+    "game development",
+    "chibi RPG",
+    "mobile landscape",
+    "Vercel"
+  ],
+  "homepage": "https://nam-lun-khu-rung-tinh-linh-3d.vercel.app",
+  "repository": "https://github.com/thanhmade/--L-n-3D",
+  "skills": "./skills",
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Nấm Lùn 3D Studio",
+        "developerName": "Nguyễn Trung Thành",
+        "shortDescription": "Phát triển và sửa lỗi game Nấm Lùn 3D",
+        "longDescription": "Hướng dẫn nâng cấp game Nấm Lùn 3D chibi Three.js: sửa lỗi HUD trên điện thoại, hỗ trợ ngang màn hình, cân bằng sức mạnh quái theo cấp, thêm map và triển khai website. Plugin kỹ năng không tự thực hiện kết nối GitHub/Vercel.",
+        "category": "Productivity",
+        "capabilities": [
+          "Interactive"
+        ],
+        "defaultPrompt": [
+          "Kiểm tra và sửa lỗi HUD trên điện thoại của game Nấm Lùn 3D theo ảnh chụp.",
+          "Cân bằng quái theo cấp LV và ba độ khó trong game Nấm Lùn 3D.",
+          "Hướng dẫn bổ sung bản đồ, Boss và nhiệm vụ cho game Nấm Lùn 3D."
+        ]
+      }
+    }
+  }
+}

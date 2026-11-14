@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="330" viewBox="0 0 1200 330" role="img" aria-label="Minh họa game Nấm Lùn trong rừng cổ tích">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y2="1"><stop stop-color="#102c35"/><stop offset="1" stop-color="#245d54"/></linearGradient>
+    <radialGradient id="glow"><stop stop-color="#b1ffd9" stop-opacity="0.45"/><stop offset="1" stop-color="#b1ffd9" stop-opacity="0"/></radialGradient>
+    <linearGradient id="cap" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffa18a"/><stop offset="1" stop-color="#d65b70"/></linearGradient>
+    <filter id="f"><feGaussianBlur stdDeviation="5"/></filter>
+  </defs>
+  <rect width="1200" height="330" rx="24" fill="url(#bg)"/>
+  <circle cx="175" cy="132" r="170" fill="url(#glow)"/><circle cx="945" cy="105" r="250" fill="url(#glow)"/>
+  <path d="M0 240Q210 190 390 240T770 225T1200 245V330H0z" fill="#245f4c" opacity=".5"/>
+  <path d="M0 277Q260 222 450 269T900 254T1200 278V330H0z" fill="#102e2e"/>
+  <g transform="translate(90,67)">
+    <ellipse cx="105" cy="209" rx="80" ry="15" fill="#001c22" opacity=".4" filter="url(#f)"/>
+    <rect x="70" y="118" width="76" height="95" rx="30" fill="#fae5c0"/>
+    <path d="M13 127C23 58 75 9 108 9c67 0 105 61 110 118 2 15-15 21-30 19-60-5-115-4-155 0-14 2-23-7-20-19z" fill="url(#cap)" stroke="#ffc0a0" stroke-width="6"/>
+    <g fill="#fff1d8"><ellipse cx="68" cy="95" rx="17" ry="22"/><ellipse cx="145" cy="72" rx="22" ry="17"/><ellipse cx="180" cy="116" rx="11" ry="14"/></g>
+    <circle cx="92" cy="163" r="5" fill="#27545b"/><circle cx="123" cy="163" r="5" fill="#27545b"/>
+    <path d="M93 184q17 14 29 0" stroke="#ca7983" fill="none" stroke-width="4" stroke-linecap="round"/>
+    <path d="M65 205l-12 24M142 205l15 24" stroke="#f6d4b7" stroke-width="18" stroke-linecap="round"/>
+    <path d="M207 123l21 55" stroke="#c9a970" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="228" cy="172" r="14" fill="#c4f7b0"/><circle cx="231" cy="167" r="6" fill="#fff7c3"/>
+  </g>
+  <g font-family="Arial, sans-serif" fill="#fbf5e5">
+    <text x="380" y="115" font-size="62" font-weight="800" letter-spacing="3">NẤM LÙN 3D</text>
+    <text x="383" y="163" font-size="31" font-weight="700" letter-spacing="2" fill="#a4f5d5">KHU RỪNG TINH LINH</text>
+    <text x="383" y="210" font-size="22" fill="#d2e8d9">KHÁM PHÁ • ĐÁNH QUÁI • LÊN CẤP • PHÉP THUẬT</text>
+    <rect x="384" y="235" width="151" height="38" rx="19" fill="#e3b175"/><text x="414" y="261" font-size="18" font-weight="bold" fill="#1b3232">v0.2.0</text>
+  </g>
+  <g fill="#ffd9a6"><circle cx="1040" cy="87" r="5"/><circle cx="1011" cy="133" r="3"/><circle cx="1120" cy="196" r="6"/><circle cx="929" cy="240" r="3"/></g>
+</svg>

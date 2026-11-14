@@ -1,0 +1,14 @@
+{
+  "id": "/",
+  "name": "Nấm Lùn – Khu Rừng Tinh Linh 3D",
+  "short_name": "Nấm Lùn 3D",
+  "description": "Game nhập vai chibi 3D: đánh quái, nhận EXP, lên cấp và khám phá ba vùng đất.",
+  "lang": "vi",
+  "start_url": "/",
+  "scope": "/",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#102b2c",
+  "theme_color": "#102523",
+  "icons": [{"src":"/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}
