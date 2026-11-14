@@ -9,3 +9,7 @@ Thumbs.db
 coverage/
 dist/
 .tmp/
+
+# Nhạc CC0 tải vào lúc build; không commit nguồn bên thứ ba nếu không cần
+public/
+assets/audio/

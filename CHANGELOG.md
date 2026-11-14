@@ -1,11 +1,3 @@
-## v0.3.0 — 14/11/2026
-
-- Thay hiệu ứng tổng hợp bằng bộ SFX CC0 Kenney + rubberduck.
-- Nhạc 3 vùng, nhạc giao tranh chuyển mượt và lớp ambience tiếng chim; có thanh âm lượng riêng.
-- 7 NPC với lời thoại tiếng Việt chuyên ngành, hội thoại nhiều câu, bấm/chạm NPC trực tiếp; dịch vụ gắn HP/MP/xu/bình máu.
-- Đọc thoại bằng giọng vi-VN trên thiết bị (phụ đề nếu chưa có voice), hạ nhạc khi NPC nói.
-- Ghi nguồn/licence đầy đủ và có quy trình build tải media từ OpenGameArt.
-
 # CHANGELOG
 
 Mọi thay đổi lớn của Nấm Lùn – Khu Rừng Tinh Linh 3D.

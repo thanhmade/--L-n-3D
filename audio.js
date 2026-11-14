@@ -1,22 +1,22 @@
 /**
  * NẤM LÙN 3D v0.3.0 — independent audio mixer.
- * CC0 assets are self-hosted under assets/audio/ (see AUDIO-CREDITS.md).
+ * CC0 assets are self-hosted under assets/audio/ (see docs/AM-THANH-NGUON-VA-GIAY-PHEP.md).
  * Spoken dialogue uses the device's installed Vietnamese Web Speech voice,
  * not third-party cloud TTS. If no vi voice is present, we show subtitles only.
  */
 export const AUDIO_TRACKS = Object.freeze({
-  music: ['assets/audio/music/village.mp3','assets/audio/music/forest.mp3','assets/audio/music/crystal.mp3'],
+  music: ['assets/audio/music/village.mp3','assets/audio/music/forest.ogg','assets/audio/music/crystal.mp3'],
   battle: 'assets/audio/music/battle.ogg',
-  ambience: 'assets/audio/ambience/birds.ogg',
+  ambience: 'assets/audio/music/ambience.mp3',
   sfx: {
-    hit:'assets/audio/sfx/blade_01.ogg', attack:'assets/audio/sfx/blade_01.ogg',
-    spell:'assets/audio/sfx/spell_01.ogg', dash:'assets/audio/sfx/spell_02.ogg',
-    hurt:'assets/audio/sfx/creature_hurt_01.ogg', defeat:'assets/audio/sfx/creature_die_01.ogg',
-    monster:'assets/audio/sfx/creature_slime_01.ogg', elite:'assets/audio/sfx/creature_roar_01.ogg',
-    loot:'assets/audio/sfx/item_coins_01.ogg', coin:'assets/audio/sfx/item_coins_02.ogg',
-    potion:'assets/audio/sfx/item_misc_01.ogg', level:'assets/audio/sfx/item_gem_01.ogg',
-    warp:'assets/audio/sfx/spell_02.ogg', open:'assets/audio/sfx/wood_01.ogg',
-    ui:'assets/audio/sfx/misc_01.ogg', improve:'assets/audio/sfx/metal_01.ogg'
+    hit:'assets/audio/sfx/hit.ogg', attack:'assets/audio/sfx/hit.ogg',
+    spell:'assets/audio/sfx/spell.ogg', dash:'assets/audio/sfx/warp.ogg',
+    hurt:'assets/audio/sfx/hurt.ogg', defeat:'assets/audio/sfx/defeat.ogg',
+    monster:'assets/audio/sfx/warning.mp3', elite:'assets/audio/sfx/defeat.ogg',
+    loot:'assets/audio/sfx/pickup.mp3', coin:'assets/audio/sfx/coin.ogg',
+    potion:'assets/audio/sfx/spell.ogg', level:'assets/audio/sfx/level.mp3',
+    warp:'assets/audio/sfx/warp.ogg', open:'assets/audio/sfx/ui.mp3',
+    ui:'assets/audio/sfx/ui.mp3', improve:'assets/audio/sfx/level.mp3'
   }
 });
 export const AUDIO_PREF_KEY = 'nam-lun-audio-prefs-v03';
@@ -66,12 +66,12 @@ export class GameAudio {
   pauseAll(){if(this.music)this.music.pause();if(this.oldMusic)this.oldMusic.pause();if(this.birds)this.birds.pause();this.activeEffects.forEach(a=>a.pause());}
   musicVolume(){return this.soundEnabled&&this.prefs.musicOn?this.prefs.music*this.duck:0;}
   updateMix(){if(this.music&&!this.fadeId)this.music.volume=this.musicVolume();
-    if(this.birds){const active=(this.zone===0||this.zone===1);this.birds.volume=active&&this.soundEnabled&&this.prefs.musicOn?this.prefs.ambience*this.duck:0;}
+    if(this.birds){const active=(!this.combat&&(this.zone===0||this.zone===1));this.birds.volume=active&&this.soundEnabled&&this.prefs.musicOn?this.prefs.ambience*this.duck:0;}
   }
   playZone(zone){
     this.zone=zone;
     if(!this.unlocked||!this.soundEnabled||!this.prefs.musicOn){this.pauseAll();return;}
-    const path=(this.combat ? AUDIO_TRACKS.battle : AUDIO_TRACKS.music[zone])||AUDIO_TRACKS.music[0];
+    const path=this.combat ? AUDIO_TRACKS.battle : (AUDIO_TRACKS.music[zone]||AUDIO_TRACKS.music[0]);
     if(this.music && this.music.dataset.path===path){void this.music.play().catch(()=>{});this.updateMix();this.playBirds();return;}
     if(this.fadeId){cancelAnimationFrame(this.fadeId);this.fadeId=null;}
     this.oldMusic?.pause();this.oldMusic=this.music;
@@ -86,15 +86,10 @@ export class GameAudio {
     };
     this.fadeId=requestAnimationFrame(blend);
   }
-  setCombat(active){
-    const combat=!!active;
-    if(this.combat===combat)return;
-    this.combat=combat;
-    if(this.unlocked)this.playZone(this.zone);
-  }
+  setCombat(value){const combat=!!value;if(this.combat===combat)return;this.combat=combat;this.playZone(this.zone);}
   playBirds(){
     if(!this.birds)this.birds=this.createAudio(AUDIO_TRACKS.ambience,true);
-    if((this.zone===0||this.zone===1)&&this.prefs.musicOn&&this.soundEnabled){void this.birds.play().catch(()=>{});}
+    if((!this.combat&&(this.zone===0||this.zone===1))&&this.prefs.musicOn&&this.soundEnabled){void this.birds.play().catch(()=>{});}
     else this.birds.pause();this.updateMix();
   }
   sfx(name,scale=1){

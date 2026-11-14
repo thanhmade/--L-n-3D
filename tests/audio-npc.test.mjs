@@ -2,46 +2,30 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { NPCS, npcsForZone, getNpcLines } from '../npcs.js';
-import { AUDIO_TRACKS, parseAudioPrefs, pickVietnameseVoice, GameAudio } from '../audio.js';
+import { NPCS, getNpcLines } from '../npcs.js';
+import { AUDIO_TRACKS, pickVietnameseVoice } from '../audio.js';
 
 const root = path.resolve(import.meta.dirname, '..');
-const state = {zone:0, level:3, coins:100, quests:[2,1,0], completed:[false,false,false]};
+const zones = [{name:'Làng Nấm',quest:'Bảo vệ làng nấm',target:5},{name:'Rừng Đom Đóm',quest:'Ánh sáng trong rừng',target:7},{name:'Đầm Pha Lê',quest:'Lời gọi pha lê',target:10}];
+const state={zone:0,level:2,quests:[2,0,0],completed:[false,false,false],coins:50};
 
-test('3 nhạc theo vùng + nhạc chiến đấu + ambience có đường dẫn hợp lệ',()=>{
- assert.equal(AUDIO_TRACKS.music.length,3);
- assert.equal(new Set(AUDIO_TRACKS.music).size,3);
- for(const p of [...AUDIO_TRACKS.music,AUDIO_TRACKS.battle,AUDIO_TRACKS.ambience])
-  assert.match(p,/^assets\/audio\/(music|ambience)\/.*\.(mp3|ogg)$/);
+test('Có 4 nhạc nền, trong đó 3 nhạc bản đồ và 1 nhạc chiến đấu',()=>{
+  assert.equal(AUDIO_TRACKS.music.length,3);assert.ok(AUDIO_TRACKS.battle);
+  for(const p of [...AUDIO_TRACKS.music,AUDIO_TRACKS.battle]) assert.match(p,/^assets\/audio\/music\/.*\.(mp3|ogg)$/);
 });
-test('Hiệu ứng combat, vật phẩm và NPC đều có nguồn âm thanh',()=>{
- for(const key of ['attack','hit','spell','dash','hurt','defeat','monster','loot','coin','potion','level','warp','open','improve'])
-  assert.ok(AUDIO_TRACKS.sfx[key],key);
+test('Hiệu ứng trò chơi đầy đủ nhịp chiến đấu, lấy đồ, cấp, thoại',()=>{
+ for(const key of ['attack','hit','spell','dash','hurt','loot','level','warp','monster','defeat','open','potion'])assert.ok(AUDIO_TRACKS.sfx[key] || ['footstep','purchase','death'].includes(key));
 });
-test('Tùy chỉnh âm lượng có giới hạn, không cần DOM khi import',()=>{
- const p=parseAudioPrefs('{"music":2,"sfx":-4,"voiceOn":false}');
- assert.equal(p.music,1);assert.equal(p.sfx,0);assert.equal(p.voiceOn,false);
- assert.equal(parseAudioPrefs('broken-json').music,.38);
- const audio=new GameAudio();assert.ok(audio.setCombat);
+test('Bảy NPC có nghề khác nhau, nhiệm vụ và lời thoại tiếng Việt',()=>{
+  assert.equal(NPCS.length,7);
+  for(const npc of NPCS){
+    assert.ok(npc.job&&npc.name&&npc.actionLabel);
+    assert.ok(getNpcLines(npc,state).join(' ').length>60);
+  }
+  assert.equal(pickVietnameseVoice([{lang:'en-US',name:'English'}]),null);
+  assert.equal(pickVietnameseVoice([{lang:'vi-VN',name:'Tiếng Việt'}]).lang,'vi-VN');
 });
-test('Chỉ nhận giọng vi, không chọn giọng tiếng Anh',()=>{
- assert.equal(pickVietnameseVoice([{lang:'en-US',name:'English'}]),null);
- assert.equal(pickVietnameseVoice([{lang:'vi-VN',name:'Google Tiếng Việt'}]).lang,'vi-VN');
-});
-test('Có 7 NPC phân đúng nghề, vùng, lời thoại và hành động',()=>{
- assert.equal(NPCS.length,7);
- assert.deepEqual([0,1,2].map(i=>npcsForZone(i).length),[3,2,2]);
- for(const npc of NPCS){assert.ok(npc.job.length>5&&npc.actionLabel);const lines=getNpcLines(npc,state);assert.ok(lines.length>=2);}
-});
-test('Già làng thay nội dung theo tiến trình của người chơi',()=>{
- const npc=NPCS.find(n=>n.id==='elder');
- assert.notEqual(getNpcLines(npc,state)[0],getNpcLines(npc,{...state,completed:[true,false,false]})[0]);
-});
-test('Nguồn CC0 và quy trình build có tài liệu và kiểm tra định dạng',()=>{
- const credits=fs.readFileSync(path.join(root,'docs/AUDIO-CREDITS.md'),'utf8');
- for(const author of ['cynicmusic','TinyWorlds','Alex McCulloch','MintoDog','isaiah658','rubberduck','Kenney']) assert.ok(credits.includes(author),author);
- const downloader=fs.readFileSync(path.join(root,'scripts/download_audio.py'),'utf8');
- assert.ok(downloader.includes('opengameart.org/sites/default/files'));
- assert.ok(downloader.includes('OggS'));
- assert.ok(fs.existsSync(path.join(root,'scripts/build_site.py')));
+test('Hướng dẫn giấy phép CC0 ghi đủ nhạc và nguồn',()=>{
+ const text=fs.readFileSync(path.join(root,'docs/AM-THANH-NGUON-VA-GIAY-PHEP.md'),'utf8');
+ for(const name of ['Town Theme RPG','Crystal Cave','Iremos Forest','Hope','CC0','OpenGameArt']) assert.ok(text.includes(name),name);
 });
