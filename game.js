@@ -3,6 +3,8 @@
  * Original procedural character and world assets. Three.js r187 (MIT).
  * All game logic, characters, monsters and maps are generated in this file.
  */
+import {GameAudio} from './audio.js';
+import {NPCS,npcsForZone,getNpcLines} from './npcs.js';
 let THREE;
 try {
   THREE = await import('https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js');
@@ -23,7 +25,7 @@ const rand = (a,b) => a + Math.random()*(b-a);
 const lerp = THREE.MathUtils.lerp;
 const SAVE_KEY = 'nam-lun-phieu-luu-save-v1';
 const MOBILE = matchMedia('(pointer: coarse)').matches || /Android|iPhone|iPad/i.test(navigator.userAgent);
-const GAME_VERSION = '0.2.0';
+const GAME_VERSION = '0.3.0';
 const DIFFICULTY = {story:{label:'Dễ',health:2.5,damage:.73,speed:.8,aggro:9.5,interval:2.05},challenge:{label:'Thử thách',health:4.4,damage:1.25,speed:1.18,aggro:14,interval:1.38},nightmare:{label:'Ác mộng',health:6.3,damage:1.77,speed:1.44,aggro:18,interval:1.06}};
 const ZONES = [
   {name:'Làng Nấm Ánh Sao',subtitle:'Khu tân thủ · LV 1+',emoji:'🍄',min:1,grass:'#80bb86',darkGrass:'#6da87a',floor:'#afd99a',sky:'#a6d8ce',fog:'#bbd7ba',mushroom:'#e87979',highlight:'#ffdfa3',rock:'#9ab79a',enemy:'Nấm Tinh Nghịch',types:['slime','shroom','slime'],quest:'Bảo vệ làng nấm',description:'Đánh bại 5 sinh vật tinh nghịch quanh làng.',target:5,bonus:170},
@@ -35,13 +37,15 @@ const xpRequired = level => 78 + level*42;
 const maxHP = level => 100 + (level-1)*24;
 const maxMP = level => 80 + (level-1)*12;
 const atk = level => 22 + (level-1)*7;
+const playerAttack = () => atk(state.level) * (elapsed < state.attackBoostUntil ? 1.25 : 1);
 const defaultSave = () => ({level:1,xp:0,hp:100,mp:80,coins:0,kills:0,potions:3,zone:0,hat:'red',quests:[0,0,0],completed:[false,false,false],difficulty:'challenge'});
 function readSave(){try{const v=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');if(!v)return defaultSave();const d=defaultSave();const s={...d,...v};s.level=clamp(Math.floor(Number(s.level)||1),1,60);s.zone=clamp(Math.floor(Number(s.zone)||0),0,2);s.xp=clamp(Number(s.xp)||0,0,xpRequired(s.level)-1);s.hp=clamp(Number(s.hp)||maxHP(s.level),1,maxHP(s.level));s.mp=clamp(Number(s.mp)||0,0,maxMP(s.level));s.coins=clamp(Number(s.coins)||0,0,10000000);s.potions=clamp(Number(s.potions)||0,0,999);s.kills=clamp(Number(s.kills)||0,0,10000000);s.quests=Array.isArray(s.quests)?[0,1,2].map(i=>clamp(Number(s.quests[i])||0,0,ZONES[i].target)):[0,0,0];s.completed=Array.isArray(s.completed)?[0,1,2].map(i=>!!s.completed[i]):[false,false,false];s.hat=HAT_COLORS[s.hat]?s.hat:'red';s.difficulty=DIFFICULTY[s.difficulty]?s.difficulty:'challenge';if(s.level<ZONES[s.zone].min)s.zone=0;return s;}catch{return defaultSave();}}
 let saved=readSave();
-const state={...saved,started:false,paused:true,sound:true,world:null,hero:null,heroVisual:null,levelPopup:false,gameOver:false,lastMove:new THREE.Vector3(0,0,-1),attackAt:0,magicAt:0,dashAt:0,dashRemain:0,dashDir:new THREE.Vector3(0,0,-1),hurtAt:0,gameTime:0,camYaw:0.17,camPitch:0.62,camDistance:13.8,heroWalking:false};
+const state={...saved,started:false,paused:true,sound:true,world:null,hero:null,heroVisual:null,levelPopup:false,gameOver:false,lastMove:new THREE.Vector3(0,0,-1),attackAt:0,magicAt:0,dashAt:0,dashRemain:0,dashDir:new THREE.Vector3(0,0,-1),hurtAt:0,gameTime:0,camYaw:0.17,camPitch:0.62,camDistance:13.8,heroWalking:false,rangerBuffUntil:0,attackBoostUntil:0,fairyBlessAt:-60,activeNpc:null,npcLine:0};
 let renderer,scene,camera,sun,hemi,ambience,worlds=[null,null,null],elapsed=0,previous=performance.now(),hudClock=0,minimapClock=0,regenClock=0,autosaveClock=0;
 const effects=[],projectiles=[],pickups=[],keys=new Set();
-let audioCtx=null;
+const gameAudio=new GameAudio(msg=>{const target=$('voice-hint'); if(!target)return;target.textContent=msg;target.hidden=false;clearTimeout(gameAudio.statusTimer);gameAudio.statusTimer=setTimeout(()=>{target.hidden=true;},5000);});
+const npcRaycaster=new THREE.Raycaster();const npcMouse=new THREE.Vector2();
 const tempVec=new THREE.Vector3(),tempVec2=new THREE.Vector3(),screenVec=new THREE.Vector3(),cameraLook=new THREE.Vector3();
 const canvas=$('game-canvas'),app=$('app');
 const gameSize=()=>({width:app.clientWidth||innerWidth,height:app.clientHeight||innerHeight});
@@ -272,13 +276,19 @@ function buildWorld(zone){
     }
   }
   const forward=createPortal(group,-23,true,zone);const backward=zone>0?createPortal(group,23,false,zone):null;
-  const elder=zone===0?elderNPC(group):null;
+  const npcs=[];
+  for(const model of npcsForZone(zone)){
+    const mesh=model.id==='elder'?elderNPC(group):buildNPCVisual(group,model);
+    mesh.userData.npcId=model.id;
+    npcs.push({model,group:mesh});
+  }
+  const elder=npcs.find(n=>n.model.id==='elder')?.group||null;
   // Floating firefly points, updated in the animation loop
   const positions=new Float32Array((MOBILE?65:110)*3),phase=[];
   for(let i=0;i<(MOBILE?65:110);i++){const [x,z]=spot(2,31);positions[i*3]=x;positions[i*3+1]=1.1+rnd()*6.5;positions[i*3+2]=z;phase.push(rnd()*TAU);}
   const flies=new THREE.Points(new THREE.BufferGeometry(),new THREE.PointsMaterial({color:p.highlight,size:zone===1?.17:.115,transparent:true,opacity:.78,sizeAttenuation:true,depthWrite:false,blending:THREE.AdditiveBlending}));
   flies.geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));group.add(flies);
-  const world={zone,group,forward,backward,elder,flies,flyY:Float32Array.from({length:(MOBILE?65:110)},(_,i)=>positions[i*3+1]),flyPhase:phase,enemies:[],pickups:[],createdAt:elapsed};
+  const world={zone,group,forward,backward,elder,npcs,flies,flyY:Float32Array.from({length:(MOBILE?65:110)},(_,i)=>positions[i*3+1]),flyPhase:phase,enemies:[],pickups:[],createdAt:elapsed};
   for(let i=0;i<(zone===0?11:zone===1?12:13);i++)spawnEnemy(world,i);
   return world;
 }
@@ -297,6 +307,7 @@ function switchWorld(index,first=false,fromBack=false){
   state.lastMove.set(0,0,first||!fromBack?-1:1);
   $('location-name').textContent=p.name;$('location-desc').textContent=`Bản đồ ${index+1} / 3 · ${p.subtitle}`;$('mini-zone').textContent=String(index+1).padStart(2,'0');
   refreshHUD();drawWorldMap();saveGame();
+  gameAudio.playZone(index);
   if(!first){burst(state.hero.position.clone().add(new THREE.Vector3(0,1.3,0)),'#c4ffff',38,3,1.0);notify(`🌀 Đã đến ${p.name}!`,'gold');sound('warp');}
 }
 function zoneTint(z){return z===0?'#fff3da':z===1?'#ddfff3':'#e6efff'}
@@ -386,8 +397,7 @@ function enemyLabel(e){return (e.isElite?'Tinh anh · ':'')+(e.type==='slime'?'N
 
 // ----- Combat, magic, treasures and level progression -----
 function saveGame(){try{const fields=['level','xp','hp','mp','coins','kills','potions','zone','hat','quests','completed','difficulty'];const obj={};fields.forEach(f=>obj[f]=state[f]);localStorage.setItem(SAVE_KEY,JSON.stringify(obj));}catch{}}
-function beep(freq,duration=.12,wave='sine',volume=.09,endFreq){if(!state.sound||!state.started)return;try{audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume().catch(()=>{});const t=audioCtx.currentTime,osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.type=wave;osc.frequency.setValueAtTime(freq,t);osc.frequency.exponentialRampToValueAtTime(Math.max(50,endFreq||freq*.65),t+duration);gain.gain.setValueAtTime(volume,t);gain.gain.exponentialRampToValueAtTime(.001,t+duration);osc.connect(gain);gain.connect(audioCtx.destination);osc.start(t);osc.stop(t+duration+.015);}catch{}}
-function sound(type){if(type==='hit'){beep(280,.10,'triangle',.055,130)}else if(type==='spell'){beep(780,.24,'sine',.07,260);beep(1210,.13,'sine',.035,600)}else if(type==='level'){beep(520,.27,'sine',.1,840);setTimeout(()=>beep(730,.27,'sine',.09,1110),140);setTimeout(()=>beep(980,.32,'sine',.1,1400),260)}else if(type==='loot'){beep(750,.10,'sine',.04,1000)}else if(type==='warp'){beep(360,.48,'sine',.07,800)}else if(type==='dash'){beep(450,.11,'triangle',.04,160)}else if(type==='hurt'){beep(150,.28,'sawtooth',.035,90)}}
+function sound(type){gameAudio.sfx(type, type==='hit'?.9:type==='loot'?.55:1);}
 function notify(text,style=''){const el=document.createElement('div');el.className='toast '+style;el.textContent=text;$('toast-stack').prepend(el);setTimeout(()=>el.remove(),2650);const stack=$('toast-stack');while(stack.children.length>3)stack.lastElementChild.remove();}
 function floatText(text,position,type=''){if(!camera)return;const p=position.clone().project(camera);if(p.z<-1||p.z>1)return;const vp=gameSize(),x=(p.x*.5+.5)*vp.width,y=(-p.y*.5+.5)*vp.height;const el=document.createElement('div');el.className='float-damage '+type;el.textContent=text;el.style.left=x+'px';el.style.top=y+'px';$('floating-layer').append(el);setTimeout(()=>el.remove(),780);}
 function burst(position,color,count=16,speed=2.5,life=.75){
@@ -412,7 +422,7 @@ function hitEnemy(e,amount,isCrit=false,byMagic=false){
   floatText((isCrit?'✦ ':'-')+dmg,pos,isCrit?'crit':'');
   burst(pos,byMagic?'#a2f6ff':'#ffe0a1',byMagic?18:9,byMagic?3.6:2.1,.48);
   sound('hit');
-  if(e.hp<=0)killEnemy(e);
+  if(e.hp<=0)killEnemy(e);else if(Math.random()<.27)sound('monster');
 }
 function closestEnemy(range=4,angleLimit=TAU){
   let closest=null,best=1e9;
@@ -426,23 +436,23 @@ function attackAction(){
   state.attackAt=elapsed+.55;state.attackAnim=.34;
   const enemy=closestEnemy(4.35,TAU);
   if(enemy){const toward=enemy.group.position.clone().sub(state.hero.position);state.hero.rotation.y=Math.atan2(toward.x,toward.z);state.lastMove.copy(toward).setY(0).normalize();}
-  slashEffect();beep(620,.11,'triangle',.045,230);
+  slashEffect();sound('attack');gameAudio.setCombat(true);
   let targets=state.world.enemies.filter(e=>e.alive&&e.group.position.distanceTo(state.hero.position)<3.95);
   const facing=new THREE.Vector3(Math.sin(state.hero.rotation.y),0,Math.cos(state.hero.rotation.y));
   targets=targets.filter(e=>facing.dot(e.group.position.clone().sub(state.hero.position).normalize())>-.12).sort((a,b)=>a.group.position.distanceTo(state.hero.position)-b.group.position.distanceTo(state.hero.position)).slice(0,3);
-  for(const e of targets){const crit=Math.random()<.18;hitEnemy(e,atk(state.level)*(crit?1.62:1),crit);}
+  for(const e of targets){const crit=Math.random()<.18;hitEnemy(e,playerAttack()*(crit?1.62:1),crit);}
 }
 function magicAction(){
   if(!state.started||state.paused||state.gameOver||elapsed<state.magicAt)return;
-  if(state.mp<18){notify('✦ Không đủ MP để sử dụng phép!','red');beep(180,.14,'sine',.035);return;}
+  if(state.mp<18){notify('✦ Không đủ MP để sử dụng phép!','red');sound('ui');return;}
   state.mp-=18;state.magicAt=elapsed+1.45;
   let target=closestEnemy(15,TAU);const forward=state.lastMove.clone().normalize();
   if(target){const toward=target.group.position.clone().sub(state.hero.position);state.hero.rotation.y=Math.atan2(toward.x,toward.z);forward.copy(toward).setY(0).normalize();}
   const orbMat=mat('#8befff',.12,'#4de6ff',2.2);
   const orb=sphere(scene,orbMat,state.hero.position.x+forward.x*.9,1.64,state.hero.position.z+forward.z*.9,.32,.32,.32);
   sphere(orb,basic('#8fffff',.20),0,0,0,1.52,1.52,1.52);
-  projectiles.push({obj:orb,target,velocity:forward.clone().multiplyScalar(12.5),ttl:1.45,damage:Math.round(atk(state.level)*1.6+11),position:orb.position.clone()});
-  burst(orb.position.clone(),'#9ff8ff',20,2.2,.56);sound('spell');refreshHUD();
+  projectiles.push({obj:orb,target,velocity:forward.clone().multiplyScalar(12.5),ttl:1.45,damage:Math.round(playerAttack()*1.6+11),position:orb.position.clone()});
+  burst(orb.position.clone(),'#9ff8ff',20,2.2,.56);gameAudio.setCombat(true);sound('spell');refreshHUD();
 }
 function dashAction(){
   if(!state.started||state.paused||state.gameOver||elapsed<state.dashAt)return;
@@ -457,17 +467,18 @@ function potionAction(){
   if(state.hp>=maxHP(state.level)){notify('❤️ Sinh lực đã đầy!');return;}
   state.potions--;const amount=Math.round(maxHP(state.level)*.45);state.hp=Math.min(maxHP(state.level),state.hp+amount);
   floatText('+'+amount,state.hero.position.clone().add(new THREE.Vector3(0,3.3,0)),'heal');burst(state.hero.position.clone().add(new THREE.Vector3(0,1.0,0)),'#8af8ac',25,1.8,.9);
-  notify('🧪 Đã dùng bình hồi máu!');beep(660,.24,'sine',.06,990);refreshHUD();saveGame();
+  notify('🧪 Đã dùng bình hồi máu!');sound('potion');refreshHUD();saveGame();
 }
 function hurtPlayer(amount){
   if(state.dashRemain>0||state.gameOver||!state.started||state.paused||elapsed<state.hurtAt+.5)return;
-  state.hp=Math.max(0,state.hp-Math.round(amount));state.hurtAt=elapsed;
-  floatText('-'+Math.round(amount),state.hero.position.clone().add(new THREE.Vector3(0,3.4,0)),'player-hit');
+  const actualDamage=Math.round(amount*(elapsed<state.rangerBuffUntil?.78:1));
+  state.hp=Math.max(0,state.hp-actualDamage);state.hurtAt=elapsed;
+  floatText('-'+actualDamage,state.hero.position.clone().add(new THREE.Vector3(0,3.4,0)),'player-hit');
   burst(state.hero.position.clone().add(new THREE.Vector3(0,1.1,0)),'#ff8393',12,2.0,.48);sound('hurt');refreshHUD();
-  if(state.hp<=0){state.gameOver=true;state.paused=true;$('death-screen').classList.remove('hidden');}
+  if(state.hp<=0){state.gameOver=true;state.paused=true;gameAudio.stopSpeech();sound('defeat');$('death-screen').classList.remove('hidden');}
 }
 function killEnemy(e){
-  e.alive=false;e.group.visible=false;e.deadUntil=elapsed+rand(8,12);
+  e.alive=false;e.group.visible=false;sound('defeat');e.deadUntil=elapsed+rand(8,12);
   const xp=Math.round((27+e.level*13+e.zone*9)*(e.isElite?1.5:1)),coins=5+e.level*3+Math.floor(Math.random()*8)+(e.isElite?16:0);
   state.kills++;state.quests[state.zone]=Math.min(ZONES[state.zone].target,state.quests[state.zone]+1);
   burst(e.group.position.clone().add(new THREE.Vector3(0,1.15,0)),'#ffe5b0',32,3.5,.95);
@@ -493,7 +504,7 @@ function collectPickup(p){
   if(p.claimed)return;p.claimed=true;scene.remove(p.group);p.group.traverse(o=>{if(o.isMesh&&o.geometry!==G.sphere)o.geometry.dispose();});
   if(p.type==='coin'){state.coins+=p.amount;floatText('+'+p.amount+' 🪙',state.hero.position.clone().add(new THREE.Vector3(0,2.9,0)),'heal');}
   else{state.potions++;notify('🧪 Nhặt được Bình Hồi Máu!','gold');}
-  sound('loot');refreshHUD();saveGame();
+  sound(p.type==='coin'?'coin':'potion');refreshHUD();saveGame();
 }
 function gainXP(points){
   state.xp+=points;let leveled=false;
@@ -524,7 +535,8 @@ function respawn(){
 function interact(){
   if(!state.started||state.paused||state.gameOver)return;
   const info=getInteraction();if(!info)return;
-  if(info.kind==='elder'){notify('🧙 Già làng: Hãy đánh quái, nhận EXP và tiến tới cổng ánh sáng!','gold');beep(590,.19,'sine',.07,710);return;}
+  if(info.kind==='npc'){openNpcDialogue(info.npc.model);return;}
+
   if(info.require&&state.level<info.require){notify(`🔒 Cần đạt LV ${info.require} để mở cổng!`,'red');return;}
   const next=info.kind==='forward'?state.zone+1:state.zone-1;
   if(next>=0&&next<ZONES.length)switchWorld(next,false,info.kind==='back');
@@ -535,16 +547,18 @@ function getInteraction(){
   const front=state.world.forward.position;
   if(Math.hypot(pos.x-front.x,pos.z-front.z)<4.55&&state.zone<2)return{kind:'forward',require:ZONES[state.zone+1].min};
   if(state.world.backward){const back=state.world.backward.position;if(Math.hypot(pos.x-back.x,pos.z-back.z)<4.55)return{kind:'back',require:0};}
-  if(state.world.elder&&Math.hypot(pos.x+6,pos.z-7)<3.3)return{kind:'elder',require:0};
+  let closest=null, best=4.0;
+  for(const npc of state.world.npcs){const d=Math.hypot(pos.x-npc.group.position.x,pos.z-npc.group.position.z);if(d<best){closest=npc;best=d;}}
+  if(closest)return{kind:'npc',npc:closest,require:0};
   return null;
 }
 function updateInteractionUI(){
   const p=getInteraction();
   if(!p||!state.started||state.paused){$('world-prompt').classList.add('hidden');return;}
   $('world-prompt').classList.remove('hidden');
-  $('prompt-icon').textContent=p.kind==='elder'?'🧙':'🌀';
-  $('prompt-title').textContent=p.kind==='elder'?'Già làng Nấm':p.kind==='back'?'Cổng trở về':`Cổng tới ${ZONES[state.zone+1].name}`;
-  $('prompt-sub').textContent=p.kind==='forward'&&state.level<p.require?`🔒 Yêu cầu cấp ${p.require}`:p.kind==='elder'?'Nhận chỉ dẫn phiêu lưu':'Nhấn E để tương tác';
+  $('prompt-icon').textContent=p.kind==='npc'?p.npc.model.face:'🌀';
+  $('prompt-title').textContent=p.kind==='npc'?p.npc.model.name:p.kind==='back'?'Cổng trở về':`Cổng tới ${ZONES[state.zone+1].name}`;
+  $('prompt-sub').textContent=p.kind==='forward'&&state.level<p.require?`🔒 Yêu cầu cấp ${p.require}`:p.kind==='npc'?'Chạm nhân vật hoặc nhấn E để trò chuyện':'Nhấn E để tương tác';
 }
 
 // ----- Input: PC keyboard, camera drag and mobile virtual joystick -----
@@ -555,7 +569,7 @@ function initEvents(){
     $('start-screen').classList.add('hidden');state.started=true;state.paused=false;
     if(MOBILE)void requestLandscape();
     state.gameOver=false;state.levelPopup=false;
-    try{audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();audioCtx.resume().catch(()=>{});}catch{}
+    gameAudio.unlock();syncAudioSettings();
     notify(`🍄 Chào mừng đến ${ZONES[state.zone].name}!`,'gold');
     setTimeout(()=>{if(state.started&&!state.paused)notify('⚔️ Hãy đánh quái gần đường mòn để lên cấp!');},1250);
   });
@@ -571,7 +585,12 @@ function initEvents(){
   $('btn-dash').addEventListener('pointerdown',e=>{e.preventDefault();dashAction();});
   $('btn-potion').addEventListener('pointerdown',e=>{e.preventDefault();potionAction();});
   $('btn-interact').addEventListener('click',interact);
-  $('btn-sound').addEventListener('click',()=>{state.sound=!state.sound;$('btn-sound').textContent=state.sound?'🔊':'🔇';});
+  $('btn-sound').addEventListener('click',()=>{state.sound=!state.sound;gameAudio.setEnabled(state.sound);$('btn-sound').textContent=state.sound?'🔊':'🔇';});
+  bindAudioSettings();
+  $('npc-next').addEventListener('click',nextNpcLine);
+  $('npc-replay').addEventListener('click',()=>speakNpcLine());
+  $('npc-close').addEventListener('click',closeNpcDialogue);
+  $('npc-service').addEventListener('click',npcService);
   $('btn-help').addEventListener('click',()=>openOverlay('help-screen'));
   $('btn-help-close').addEventListener('click',()=>closeOverlay('help-screen'));
   $('btn-map').addEventListener('click',()=>openOverlay('worldmap-screen'));
@@ -583,7 +602,8 @@ function initEvents(){
     keys.add(code);
     if(e.repeat)return;
     if(code==='Escape'){
-      if(!$('help-screen').classList.contains('hidden'))closeOverlay('help-screen');
+      if(!$('npc-screen').classList.contains('hidden'))closeNpcDialogue();
+      else if(!$('help-screen').classList.contains('hidden'))closeOverlay('help-screen');
       else if(!$('worldmap-screen').classList.contains('hidden'))closeOverlay('worldmap-screen');
       return;
     }
@@ -598,14 +618,18 @@ function initEvents(){
   window.addEventListener('blur',()=>{keys.clear();stick.x=stick.y=0;updateKnob();});
   document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.clear();stick.x=stick.y=0;updateKnob();saveGame();}});
   let drag=null;
-  canvas.addEventListener('pointerdown',e=>{if(!state.started)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY};try{canvas.setPointerCapture(e.pointerId)}catch{}});
+  canvas.addEventListener('pointerdown',e=>{if(!state.started||state.paused)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY,downAt:performance.now(),moved:false};try{canvas.setPointerCapture(e.pointerId)}catch{}});
   canvas.addEventListener('pointermove',e=>{
     if(!drag||drag.id!==e.pointerId)return;
-    const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;
+    const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;if(Math.abs(e.clientX-drag.startX)+Math.abs(e.clientY-drag.startY)>15)drag.moved=true;
     const localDx=isRotatedLandscape()?dy:dx,localDy=isRotatedLandscape()?-dx:dy;
     if(Math.abs(localDx)>0||Math.abs(localDy)>0){state.camYaw-=localDx*.006;state.camPitch=clamp(state.camPitch+localDy*.003, .26,1.05);}
   });
-  const endDrag=e=>{if(drag?.id===e.pointerId)drag=null;};
+  const endDrag=e=>{if(drag?.id!==e.pointerId)return;
+    const tapped=!drag.moved&&performance.now()-drag.downAt<450;
+    drag=null;
+    if(tapped&&state.started&&!state.paused)clickNPC(e);
+  };
   canvas.addEventListener('pointerup',endDrag);canvas.addEventListener('pointercancel',endDrag);
   canvas.addEventListener('wheel',e=>{e.preventDefault();state.camDistance=clamp(state.camDistance+e.deltaY*.014,8.5,22);},{passive:false});
   const joy=$('joystick');
@@ -634,7 +658,7 @@ function updateHero(dt){
   const right=tempVec2.set(Math.cos(state.camYaw),0,-Math.sin(state.camYaw));
   const move=new THREE.Vector3().addScaledVector(cameraForward,vertical).addScaledVector(right,horizontal);
   const length=move.length();state.heroWalking=length>.08;
-  if(length>.08){move.normalize();const speed=keys.has('ShiftLeft')||keys.has('ShiftRight')?9.1:6.5;
+  if(length>.08){move.normalize();const speed=(keys.has('ShiftLeft')||keys.has('ShiftRight')?9.1:6.5)*(elapsed<state.rangerBuffUntil?1.16:1);
     state.hero.position.addScaledVector(move,dt*speed*clamp(length,0,1));
     state.lastMove.copy(move);const angle=Math.atan2(move.x,move.z);
     let dAngle=THREE.MathUtils.euclideanModulo(angle-state.hero.rotation.y+Math.PI,TAU)-Math.PI;
@@ -679,7 +703,7 @@ function updateEnemies(dt,t){
     }else if(dist<e.strikeRange&&e.attackCD<=0){
       e.attackCount++;
       const heavy=e.isElite||e.attackCount%3===0;
-      if(heavy){e.heavyReady=true;e.windup=e.isElite?.6:.48;e.warning.visible=true;}
+      if(heavy){e.heavyReady=true;e.windup=e.isElite?.6:.48;e.warning.visible=true;if(dist<8&&Math.random()<.25)sound('elite');}
       else{hurtPlayer(e.damage);e.attackCD=e.attackInterval*(.9+Math.random()*.25);}
     }
     if(dist<e.aggroRange){
@@ -761,6 +785,10 @@ function loop(now){
     if(hudClock>.11){refreshHUD();updateInteractionUI();hudClock=0;}
     if(autosaveClock>8){saveGame();autosaveClock=0;}
   }
+  if(state.started&&!state.paused&&Math.floor(elapsed*2)!==Math.floor((elapsed-dt)*2)){
+    const closeThreat=state.world.enemies.some(e=>e.alive&&e.group.position.distanceTo(state.hero.position)<8.2);
+    gameAudio.setCombat(closeThreat);
+  }
   animateHero(elapsed);animateEnvironment(dt,elapsed);updateCamera(dt);updateEffects(dt);
   if(minimapClock>.11||!state.started){drawMinimap();minimapClock=0;}
   renderer.render(scene,camera);
@@ -808,11 +836,104 @@ function drawMinimap(){
   for(const e of state.world.enemies){if(!e.alive)continue;const [x,y]=mapXY(e.group.position.x,e.group.position.z);ctx.beginPath();ctx.fillStyle='#ff8c94';ctx.arc(x,y,2.8,0,TAU);ctx.fill();}
   for(const p of state.world.pickups){const [x,y]=mapXY(p.group.position.x,p.group.position.z);ctx.beginPath();ctx.fillStyle='#ffe58d';ctx.arc(x,y,2,0,TAU);ctx.fill();}
   for(const z of [-23,...(state.zone>0?[23]:[])]){const [x,y]=mapXY(0,z);ctx.beginPath();ctx.fillStyle='#ffe9a4';ctx.arc(x,y,6,0,TAU);ctx.fill();ctx.strokeStyle='#fff6d1';ctx.lineWidth=1;ctx.stroke();}
-  if(state.zone===0){const [x,y]=mapXY(-6,7);ctx.font='14px Arial';ctx.fillText('🧙',x-7,y+4);}
+  for(const npc of state.world.npcs){const [x,y]=mapXY(npc.group.position.x,npc.group.position.z);ctx.font='12px Arial';ctx.fillText(npc.model.face,x-6,y+4);}
   const [px,py]=mapXY(state.hero.position.x,state.hero.position.z),a=state.hero.rotation.y;
   ctx.save();ctx.translate(px,py);ctx.rotate(Math.PI-a);
   ctx.shadowColor='#b3ffe5';ctx.shadowBlur=13;ctx.beginPath();ctx.moveTo(0,-8);ctx.lineTo(5.5,6);ctx.lineTo(0,3);ctx.lineTo(-5.5,6);ctx.closePath();ctx.fillStyle='#a5ffe0';ctx.fill();ctx.strokeStyle='#184e48';ctx.lineWidth=1.4;ctx.stroke();ctx.restore();
   ctx.restore();
   ctx.strokeStyle='rgba(255,244,205,.52)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(cx,cy,59,57,0,0,TAU);ctx.stroke();
+}
+
+// ----- NPC system: distinct occupations, dialogue and Vietnamese speech -----
+function buildNPCVisual(parent,model){
+  const g=new THREE.Group();g.position.set(model.x,0,model.z);parent.add(g);
+  const robe=mat(model.robe),hat=mat(model.color),warm=mat('#ffe1ba');
+  sphere(g,robe,0,.95,0,.55,.70,.50,true);
+  sphere(g,warm,0,1.89,.02,.59,.6,.52,true);
+  for(const side of [-1,1]){
+    sphere(g,white,side*.22,1.97,.51,.12,.14,.08);sphere(g,dark,side*.22,1.97,.59,.065,.09,.045);
+    sphere(g,robe,side*.56,1.22,0,.18,.38,.2);
+  }
+  smile(g,0,1.76,.52,.14);
+  mushroomCap(g,model.color,1.02,.78,2.28,model.x*17+110,6);
+  if(model.id==='healer'){sphere(g,glassGlow,.76,1.05,.35,.21,.28,.21);}
+  if(model.id==='merchant'){sphere(g,gold,.6,.9,.4,.23,.23,.18);}
+  if(model.id==='ranger'){const staff=cylinder(g,wood,.73,1.1,.13,.04,.07,1.8,9);staff.rotation.z=.2;}
+  if(model.id==='fairy'){sphere(g,glassGlow,-.82,1.45,.15,.35,.5,.13);sphere(g,glassGlow,.82,1.45,.15,.35,.5,.13);}
+  if(model.id==='scholar'){const book=make(g,new THREE.BoxGeometry(.38,.12,.3),mat('#9a76b7'),[.66,1.14,.35]);book.rotation.z=-.2;}
+  if(model.id==='smith'){sphere(g,mat('#7f97a5'),.65,1.1,.32,.26,.21,.25);}
+  const label=createLabel(model.name.toUpperCase(),'#fff0c7',1.03);label.position.set(0,4.02,0);g.add(label);
+  g.rotation.y=.1;return g;
+}
+function clickNPC(e){
+  if(!state.world?.npcs?.length)return;
+  const rect=canvas.getBoundingClientRect();let x,y;
+  if(isRotatedLandscape()){x=(e.clientY-rect.top)/rect.height;y=1-(e.clientX-rect.left)/rect.width;}
+  else{x=(e.clientX-rect.left)/rect.width;y=(e.clientY-rect.top)/rect.height;}
+  npcMouse.set(x*2-1,1-y*2);
+  npcRaycaster.setFromCamera(npcMouse,camera);
+  const objects=state.world.npcs.map(n=>n.group);
+  const hits=npcRaycaster.intersectObjects(objects,true);
+  for(const hit of hits){let target=hit.object;
+    while(target&&target!==scene){if(target.userData?.npcId){const m=NPCS.find(n=>n.id===target.userData.npcId);if(m){openNpcDialogue(m);return;}}target=target.parent;}
+  }
+}
+function openNpcDialogue(npc){
+  if(!state.started||state.gameOver)return;
+  gameAudio.setCombat(false);state.activeNpc=npc;state.npcLine=0;state.paused=true;
+  $('npc-portrait').textContent=npc.face;$('npc-name').textContent=npc.name;$('npc-job').textContent=npc.job;
+  $('npc-screen').classList.remove('hidden');
+  sound('open');renderNpcLine();
+}
+function renderNpcLine(){const npc=state.activeNpc;if(!npc)return;
+  const lines=getNpcLines(npc,state),index=state.npcLine%lines.length;
+  $('npc-text').textContent=lines[index];
+  $('npc-next').disabled=lines.length<2;
+  $('npc-next').textContent=index===lines.length-1?'↩️ Nghe từ đầu':'➡️ Tiếp câu';
+  $('npc-service').textContent=npc.actionLabel;
+  const near=Math.hypot(state.hero.position.x-npc.x,state.hero.position.z-npc.z)<5.0;
+  $('npc-service').disabled=!near;
+  $('npc-service').title=near?'':'Hãy đến gần NPC để sử dụng dịch vụ';
+  $('npc-subtitle-hint').textContent=near?'🔊 Lời thoại tiếng Việt · Chạm Nghe lại để phát lại':'🔊 Đang trò chuyện từ xa. Đến gần nhân vật để sử dụng dịch vụ.';
+  speakNpcLine();
+}
+function speakNpcLine(){const npc=state.activeNpc;if(!npc)return;
+  const lines=getNpcLines(npc,state);gameAudio.speak(lines[state.npcLine%lines.length],npc.id);
+  const status=gameAudio.updateVoiceStatus();$('audio-voice-status').textContent=status;
+  if(!/^Giọng Việt:/.test(status))$('npc-subtitle-hint').textContent='💬 '+status+' Phụ đề tiếng Việt vẫn hiển thị.';
+}
+function nextNpcLine(){if(!state.activeNpc)return;const lines=getNpcLines(state.activeNpc,state);state.npcLine=(state.npcLine+1)%lines.length;renderNpcLine();}
+function closeNpcDialogue(){gameAudio.stopSpeech();$('npc-screen').classList.add('hidden');state.activeNpc=null;
+  if(state.started&&!state.gameOver&&!state.levelPopup&&$('help-screen').classList.contains('hidden')&&$('worldmap-screen').classList.contains('hidden'))state.paused=false;
+}
+function npcService(){const npc=state.activeNpc;if(!npc)return;
+  if(Math.hypot(state.hero.position.x-npc.x,state.hero.position.z-npc.z)>=5){notify('Hãy đến gần nhân vật để sử dụng dịch vụ!','red');return;}
+  const price=npc.price||0;if(state.coins<price){notify(`🪙 Cần thêm ${price-state.coins} xu để sử dụng dịch vụ!`,'red');return;}
+  let msg='';switch(npc.action){
+    case 'quest':msg=`📜 ${ZONES[state.zone].quest}: ${state.quests[state.zone]}/${ZONES[state.zone].target}`;break;
+    case 'heal':if(state.hp>=maxHP(state.level)&&state.mp>=maxMP(state.level)){msg='🌱 Sinh lực và pháp lực của bạn đã đầy!';break;}state.coins-=price;state.hp=maxHP(state.level);state.mp=maxMP(state.level);msg='💚 Đã hồi phục hoàn toàn HP và MP!';sound('potion');break;
+    case 'potion':if(state.potions>=999){msg='Túi đã đầy bình máu!';break;}state.coins-=price;state.potions++;msg='🧪 Đã mua 1 bình hồi máu.';sound('coin');break;
+    case 'guard':if(elapsed<state.rangerBuffUntil){msg='🛡️ Bảo hộ của kiểm lâm còn hiệu lực!';break;}state.coins-=price;state.rangerBuffUntil=elapsed+45;msg='🛡️ Đã được bảo hộ 45 giây: di chuyển nhanh hơn và chịu ít sát thương hơn.';sound('spell');break;
+    case 'mana':if(elapsed-state.fairyBlessAt<30){msg=`✨ Phước lành cần hồi thêm ${Math.ceil(30-(elapsed-state.fairyBlessAt))} giây.`;break;}state.fairyBlessAt=elapsed;state.mp=maxMP(state.level);msg='✨ Tiên nữ đã hồi đầy pháp lực cho bạn!';sound('spell');break;
+    case 'knowledge':msg='💎 Gợi ý: Dùng phép từ xa và lướt né khi vòng cảnh báo đỏ xuất hiện.';break;
+    case 'upgrade':if(elapsed<state.attackBoostUntil){msg='⚔️ Cường hóa sức đánh vẫn còn hiệu lực!';break;}state.coins-=price;state.attackBoostUntil=elapsed+60;msg='⚔️ Sức tấn công tăng 25% trong 60 giây!';sound('improve');break;
+    default:msg='Chúc con phiêu lưu thuận lợi!';
+  }
+  refreshHUD();saveGame();notify(msg,'gold');
+  $('npc-text').textContent=msg;
+  gameAudio.speak(msg.replace(/[^\p{L}\p{N}\s,.!?]/gu,' '),npc.id);
+}
+function bindAudioSettings(){
+  const checks={musicOn:'audio-music-on',effectsOn:'audio-effects-on',voiceOn:'audio-voice-on'};
+  const ranges={music:'audio-music',ambience:'audio-ambience',sfx:'audio-sfx',voice:'audio-voice'};
+  for(const [key,id] of Object.entries(checks))$(id).addEventListener('change',e=>gameAudio.setPref(key,e.target.checked));
+  for(const [key,id] of Object.entries(ranges))$(id).addEventListener('input',e=>gameAudio.setPref(key,Number(e.target.value)/100));
+  syncAudioSettings();
+}
+function syncAudioSettings(){
+  const p=gameAudio.prefs;
+  for(const [key,id] of Object.entries({musicOn:'audio-music-on',effectsOn:'audio-effects-on',voiceOn:'audio-voice-on'}))$(id).checked=p[key];
+  for(const [key,id] of Object.entries({music:'audio-music',ambience:'audio-ambience',sfx:'audio-sfx',voice:'audio-voice'}))$(id).value=Math.round(p[key]*100);
+  $('audio-voice-status').textContent=gameAudio.updateVoiceStatus();
 }
 init();

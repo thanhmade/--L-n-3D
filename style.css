@@ -127,3 +127,28 @@ html.force-landscape #app{
  .quest-panel{min-width:145px}
  .player-hud{width:179px}
 }
+
+/* v0.3: NPC dialogue, audio controls and Vietnamese speech support */
+.npc-overlay{z-index:24;background:rgba(2,19,25,.53);backdrop-filter:blur(9px)}
+.npc-card{width:min(540px,calc(100% - 20px));max-height:calc(100% - 24px);overflow-y:auto;padding:22px 24px 18px;border-radius:25px;background:linear-gradient(150deg,rgba(14,53,50,.98),rgba(17,35,52,.98));border:1px solid rgba(255,232,155,.57);box-shadow:0 16px 50px rgba(0,0,0,.5);}
+.npc-card-head{display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.13);padding-bottom:11px}
+.npc-portrait{display:flex;align-items:center;justify-content:center;width:62px;height:62px;border-radius:18px;background:linear-gradient(120deg,#fbddb1,#86c1ad);border:1px solid #fff4bd;font-size:32px;flex:none}
+.npc-card-head h2{font-size:22px;margin:4px 0 0;color:#fff1b8;font-weight:900}
+.npc-card-head .intro-kicker{letter-spacing:.7px;font-size:10px;color:#b0edda}
+.npc-close{margin-left:auto;align-self:flex-start;color:#f8ead0;border:1px solid rgba(255,255,255,.18);background:#0f3837;border-radius:10px;width:32px;height:32px}
+.npc-text{min-height:75px;font-size:16px;line-height:1.65;margin:15px 0 8px;color:#f9f4df;font-weight:700}
+.npc-voice-note{font-size:11px;color:#aeefc9;min-height:17px}
+.npc-dialogue-actions{display:flex;gap:9px;margin:15px 0 9px}
+.npc-secondary,.npc-service{border:1px solid rgba(255,255,255,.23);border-radius:12px;padding:10px 14px;color:#effaeb;font-size:12px;font-weight:900;background:rgba(75,145,127,.4)}
+.npc-secondary{flex:1}.npc-service{display:block;width:100%;background:linear-gradient(110deg,#f4d58f,#f3b872);border-color:#fff3b7;color:#4b3323;min-height:40px}
+.npc-service:disabled{filter:grayscale(.5);opacity:.65;cursor:not-allowed}
+.npc-footnote{display:block;margin:9px 0 0;color:#d0dcda;font-size:10px;line-height:1.4}
+.audio-settings{text-align:left;background:rgba(5,28,34,.52);border:1px solid rgba(255,255,255,.11);border-radius:12px;padding:11px 13px;margin-bottom:11px}
+.audio-settings h3{font-size:11px;letter-spacing:1px;margin:0 0 7px;color:#ffe3a2}
+.audio-settings label{display:flex;align-items:center;justify-content:space-between;gap:7px;font-size:11px;font-weight:800;color:#e0f3df;padding:3px 2px}
+.audio-settings input[type=checkbox]{accent-color:#91e6cb;margin-right:6px}
+.audio-settings label.audio-range input{width:45%;accent-color:#9deaca;cursor:pointer}
+.audio-voice-status{margin:5px 0 0;color:#ffe0a0;font-size:10px;line-height:1.3}
+.voice-hint{position:absolute;top:50px;left:50%;transform:translateX(-50%);max-width:340px;padding:6px 9px;color:#fff4c4;background:rgba(12,45,42,.82);border:1px solid #f1da90;border-radius:9px;font-size:10px;z-index:8;pointer-events:none;text-align:center}
+@media(pointer:coarse){.npc-card{padding:12px 15px;border-radius:16px;width:min(460px,calc(100% - 18px))}.npc-portrait{width:44px;height:44px;font-size:24px}.npc-card-head h2{font-size:16px}.npc-text{font-size:12px;line-height:1.5;min-height:40px;margin:8px 0 5px}.npc-dialogue-actions{margin:8px 0 6px}.npc-secondary,.npc-service{font-size:10px;padding:7px}.npc-footnote{font-size:8px}.audio-settings{padding:6px 8px}.audio-settings label{font-size:10px;padding:2px}.audio-settings h3{font-size:10px}}
+@media(pointer:coarse) and (max-height:440px){.npc-card{max-height:calc(100% - 10px)}.npc-voice-note{font-size:9px}}

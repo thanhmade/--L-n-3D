@@ -9,7 +9,7 @@
   <meta name="screen-orientation" content="landscape" />
   <meta name="color-scheme" content="dark" />
   <meta name="description" content="Nấm Lùn & Khu Rừng Tinh Linh — game hành động nhập vai chibi 3D, đánh quái và lên cấp." />
-  <title>NẤM LÙN ✦ KHU RỪNG TINH LINH — Game 3D v0.2</title>
+  <title>NẤM LÙN ✦ KHU RỪNG TINH LINH — Game 3D v0.3</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" type="image/svg+xml" href="icon.svg" />
@@ -51,6 +51,7 @@
 
   <div class="world-prompt hidden" id="world-prompt"><span id="prompt-icon">🌀</span><div><strong id="prompt-title">Cổng dịch chuyển</strong><small id="prompt-sub">Nhấn E để đi tiếp</small></div><button id="btn-interact">TƯƠNG TÁC <kbd>E</kbd></button></div>
   <div id="toast-stack" aria-live="polite"></div>
+  <div class="voice-hint" id="voice-hint" aria-live="polite" hidden></div>
   <div id="floating-layer" aria-hidden="true"></div>
   <div class="combat-hint" id="combat-hint">Di chuyển đến gần quái và nhấn <kbd>J</kbd> để tấn công</div>
 
@@ -69,7 +70,7 @@
       <div class="intro-emblem">🍄<span>✦</span></div>
       <h1>NẤM LÙN<br/><em>& KHU RỪNG TINH LINH</em></h1>
       <p>Hóa thân thành bé nấm chibi dễ thương, khám phá rừng cổ tích, đánh bại sinh vật kỳ lạ và trở thành <b>Vệ Binh Rừng Nấm</b>!</p>
-      <div class="intro-features"><span>🌳 3 bản đồ</span><span>⚔️ Đánh quái</span><span>⬆️ Lên cấp</span><span>✨ Phép thuật</span></div>
+      <div class="intro-features"><span>🌳 3 bản đồ</span><span>⚔️ Đánh quái</span><span>🗣️ NPC nói tiếng Việt</span><span>🎼 Âm nhạc huyền ảo</span></div>
       <div class="choice-label">ĐỘ KHÓ KHI ĐÁNH QUÁI</div>
       <div class="difficulty-choices" aria-label="Lựa chọn độ khó">
         <button class="difficulty-choice" data-difficulty="story">🌱 DỄ</button>
@@ -79,14 +80,34 @@
       <div class="choice-label">CHỌN MÀU MŨ CHO BÉ NẤM</div>
       <div class="hat-choices" id="hat-choices"><button class="hat-choice selected" data-hat="red"><span>🍄</span>Đỏ san hô</button><button class="hat-choice" data-hat="violet"><span>🍄</span>Tím mộng mơ</button><button class="hat-choice" data-hat="mint"><span>🍄</span>Xanh ngọc</button></div>
       <div class="intro-buttons"><button class="start-btn" id="btn-start">BẮT ĐẦU PHIÊU LƯU <span>➜</span></button><button class="secondary-btn" id="btn-reset">↻ Chơi lại từ đầu</button></div>
-      <small class="intro-note">📱 Điện thoại: tự yêu cầu xoay ngang & toàn màn hình khi bắt đầu. Trình duyệt không hỗ trợ sẽ dùng chế độ ngang mô phỏng. PC: WASD + J/L/K/H · Tiến trình lưu trên máy.</small>
+      <small class="intro-note">🔊 Khi bắt đầu game, nhạc và hiệu ứng sẽ bật sau thao tác của bạn. Chạm NPC để nghe tiếng Việt với giọng vi-VN đã cài trên máy.<br/>📱 Điện thoại: tự yêu cầu xoay ngang & toàn màn hình khi bắt đầu. Trình duyệt không hỗ trợ sẽ dùng chế độ ngang mô phỏng. PC: WASD + J/L/K/H · Tiến trình lưu trên máy.</small>
     </div>
   </div>
 
   <div class="overlay popup-overlay hidden" id="level-screen"><div class="popup-card level-card"><div class="level-glow">🌟</div><div class="intro-kicker">✦ SỨC MẠNH ĐƯỢC ĐÁNH THỨC ✦</div><h2>LÊN CẤP!</h2><div class="giant-level">LV <span id="new-level">2</span></div><p id="level-reward">Sinh lực, phép thuật và sức tấn công đã tăng!</p><button class="start-btn" id="btn-level-ok">TIẾP TỤC CHINH PHỤC ➜</button></div></div>
   <div class="overlay popup-overlay hidden" id="death-screen"><div class="popup-card"><div class="level-glow">💫</div><h2>BÉ NẤM MỆT RỒI!</h2><p>Đừng lo, phép màu của rừng sẽ đưa bạn về làng. Toàn bộ cấp độ và vật phẩm vẫn được giữ lại.</p><button class="start-btn" id="btn-respawn">🌱 HỒI SINH</button></div></div>
-  <div class="overlay popup-overlay hidden" id="help-screen"><div class="popup-card help-card"><div class="intro-kicker">SỔ TAY NHÀ THÁM HIỂM</div><h2>HƯỚNG DẪN</h2><div class="help-grid"><div><b>🎮 Di chuyển</b><p>WASD hoặc joystick. Kéo chuột / vuốt trên cảnh để xoay góc nhìn.</p></div><div><b>⚔️ Chiến đấu</b><p>J: chém gần · L: bắn phép (tiêu MP) · K: lướt né đòn.</p></div><div><b>🌟 Phát triển</b><p>Đánh quái nhận EXP, xu, đôi lúc nhặt được bình máu. H: uống bình máu.</p></div><div><b>🌀 Khám phá</b><p>Đến gần cổng phát sáng và nhấn E để qua khu mới khi đủ cấp.</p></div></div><div class="difficulty-settings"><div class="choice-label">ĐIỀU CHỈNH ĐỘ KHÓ QUÁI</div><div class="difficulty-choices"><button class="difficulty-choice" data-difficulty="story">🌱 DỄ</button><button class="difficulty-choice" data-difficulty="challenge">⚔️ THỬ THÁCH</button><button class="difficulty-choice" data-difficulty="nightmare">🔥 ÁC MỘNG</button></div></div><button class="start-btn" id="btn-help-close">ĐÃ HIỂU!</button></div></div>
+  <div class="overlay popup-overlay hidden" id="help-screen"><div class="popup-card help-card"><div class="intro-kicker">SỔ TAY NHÀ THÁM HIỂM</div><h2>HƯỚNG DẪN</h2><div class="help-grid"><div><b>🎮 Di chuyển</b><p>WASD hoặc joystick. Kéo chuột / vuốt trên cảnh để xoay góc nhìn.</p></div><div><b>⚔️ Chiến đấu</b><p>J: chém gần · L: bắn phép (tiêu MP) · K: lướt né đòn.</p></div><div><b>🌟 Phát triển</b><p>Đánh quái nhận EXP, xu, đôi lúc nhặt được bình máu. H: uống bình máu.</p></div><div><b>🌀 Khám phá</b><p>Đến gần NPC và bấm vào nhân vật hoặc nhấn E để trò chuyện tiếng Việt; qua cổng khi đủ cấp.</p></div></div><div class="difficulty-settings"><div class="choice-label">ĐIỀU CHỈNH ĐỘ KHÓ QUÁI</div><div class="difficulty-choices"><button class="difficulty-choice" data-difficulty="story">🌱 DỄ</button><button class="difficulty-choice" data-difficulty="challenge">⚔️ THỬ THÁCH</button><button class="difficulty-choice" data-difficulty="nightmare">🔥 ÁC MỘNG</button></div></div><div class="audio-settings" id="audio-settings" aria-label="Điều chỉnh âm thanh">
+    <h3>🎼 NHẠC & GIỌNG NÓI</h3>
+    <label><input type="checkbox" id="audio-music-on" checked/> Nhạc nền theo bản đồ</label>
+    <label class="audio-range">Âm lượng nhạc <input type="range" id="audio-music" min="0" max="100" value="38" /></label>
+    <label class="audio-range">Âm thanh thiên nhiên <input type="range" id="audio-ambience" min="0" max="100" value="17" /></label>
+    <label><input type="checkbox" id="audio-effects-on" checked/> Hiệu ứng chiến đấu, vật phẩm</label>
+    <label class="audio-range">Âm lượng hiệu ứng <input type="range" id="audio-sfx" min="0" max="100" value="65" /></label>
+    <label><input type="checkbox" id="audio-voice-on" checked/> Lời thoại NPC bằng tiếng Việt</label>
+    <label class="audio-range">Âm lượng giọng nói <input type="range" id="audio-voice" min="0" max="100" value="94" /></label>
+    <p class="audio-voice-status" id="audio-voice-status">Đang kiểm tra giọng nói tiếng Việt trên thiết bị…</p>
+  </div><button class="start-btn" id="btn-help-close">ĐÃ HIỂU!</button></div></div>
   <div class="overlay popup-overlay hidden" id="worldmap-screen"><div class="popup-card worldmap-card"><div class="intro-kicker">BẢN ĐỒ THẾ GIỚI</div><h2>VƯƠNG QUỐC NẤM</h2><div class="zone-list" id="zone-list"></div><p class="small-helper">Khám phá qua cổng dịch chuyển ở cuối mỗi bản đồ. Có thể quay lại các vùng đã mở.</p><button class="start-btn" id="btn-worldmap-close">TRỞ LẠI CUỘC PHIÊU LƯU</button></div></div>
+  <div class="overlay npc-overlay hidden" id="npc-screen" role="dialog" aria-modal="true" aria-labelledby="npc-name">
+    <div class="npc-card">
+      <div class="npc-card-head"><span class="npc-portrait" id="npc-portrait">🧙</span><div><div class="intro-kicker" id="npc-job">Người hướng dẫn</div><h2 id="npc-name">Già làng Nấm</h2></div><button id="npc-close" class="npc-close" type="button" aria-label="Đóng hội thoại">✕</button></div>
+      <p id="npc-text" class="npc-text" aria-live="polite">Chào con, khu rừng đang chờ nhé!</p>
+      <div id="npc-subtitle-hint" class="npc-voice-note">Bấm 🔊 để nghe tiếng Việt · Phụ đề luôn hiển thị</div>
+      <div class="npc-dialogue-actions"><button id="npc-replay" class="npc-secondary" type="button">🔊 Nghe lại</button><button id="npc-next" class="npc-secondary" type="button">➡️ Tiếp câu</button></div>
+      <button id="npc-service" class="npc-service" type="button">📜 Nhận nhiệm vụ</button>
+      <small class="npc-footnote">🎙️ Giọng đọc tiếng Việt phụ thuộc gói ngôn ngữ đã cài trên thiết bị. Nhạc nền giảm âm lượng khi nhân vật nói.</small>
+    </div>
+  </div>
   <div class="error-banner hidden" id="error-banner">Không thể tải môi trường 3D. Hãy kiểm tra kết nối Internet, làm mới trang và bảo đảm trình duyệt hỗ trợ WebGL.</div>
 </div>
 <script type="module" src="game.js"></script>

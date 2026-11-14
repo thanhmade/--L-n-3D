@@ -45,3 +45,14 @@ Ghi lại **thiết bị/OS/browser, tỷ lệ màn hình, LV, vùng, độ khó
 - [ ] URL production trả HTTP 200; CSS/JS/manifest/icon tải thành công.
 - [ ] WebGL chạy thực tế trên thiết bị đích (không chỉ kiểm tra HTTP 200).
 - [ ] Không có mật khẩu/token/API secret trong mã nguồn hoặc log.
+
+## Audio & NPC v0.3.0
+- [ ] Sau click **Bắt đầu**, nhạc vùng thứ nhất phát được; không autoplay trước click.
+- [ ] Thấy quái gần, nhạc chuyển sang chiến đấu; khi ra xa chuyển về nhạc vùng.
+- [ ] Chuyển cổng nghe nhạc khác, không có 2 bản nhạc phát to cùng lúc.
+- [ ] Âm thanh chém, phép, trúng đòn, vật phẩm, tăng LV đúng hành động.
+- [ ] Kiểm tra 7 NPC, thoại theo từng vai nghề, phụ đề, nút tiếp câu và nghe lại.
+- [ ] NPC Thầy thuốc, Thương nhân, Kiểm lâm, Tiên nữ, Thợ rèn áp dụng xu và hiệu quả chính xác.
+- [ ] Tắt tiếng / điều chỉnh nhạc, SFX, voice lưu qua reload.
+- [ ] Android Chrome cài giọng Việt vi-VN; máy không có voice vẫn có phụ đề.
+- [ ] Đường dẫn assets/audio/... trả HTTP 200 đúng content-type và dung lượng.
