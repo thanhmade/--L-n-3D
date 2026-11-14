@@ -108,7 +108,7 @@ Website đang tham chiếu: **https://nam-lun-khu-rung-tinh-linh-3d.vercel.app**
 ## 🤖 Skill & Plugin ChatGPT
 
 **[🔌 MỞ PLUGIN NẤM LÙN 3D STUDIO TRONG CHATGPT](https://chatgpt.com/plugins/plugins_6af7d6bc7b208191bab771cf91177631)**  
-Plugin đang ở chế độ **riêng tư**, chỉ chủ sở hữu được truy cập nếu chưa chia sẻ quyền.\n\n
+Plugin đang ở chế độ **riêng tư**, chỉ chủ sở hữu được truy cập nếu chưa chia sẻ quyền.
 
 - **Skill:** [`skills/nam-lun-3d-dev/SKILL.md`](skills/nam-lun-3d-dev/SKILL.md) — hướng dẫn AI đọc cấu trúc mã, cân bằng quái, mở rộng map và kiểm thử mobile.
 - **Plugin:** [`plugin/nam-lun-3d-studio/`](plugin/nam-lun-3d-studio/) — bộ manifest và skill tương ứng để đóng gói cho ChatGPT. Đây là **plugin skills-only**, không phải backend, không tự có quyền GitHub hoặc Vercel nếu chưa kết nối công cụ đó.
